@@ -1,0 +1,168 @@
+/* Premium Black & Red Design System - Pure CSS */
+
+/* CSS Variables for Design System */
+:root {
+  /* Colors */
+  --background: #141414;
+  --foreground: #fafafa;
+  --card: #1f1f1f;
+  --card-foreground: #fafafa;
+  --primary: #ef4444;
+  --primary-foreground: #ffffff;
+  --primary-glow: #f87171;
+  --secondary: #292929;
+  --secondary-foreground: #fafafa;
+  --muted: #2e2e2e;
+  --muted-foreground: #a6a6a6;
+  --accent: #dc2626;
+  --accent-foreground: #ffffff;
+  --border: #333333;
+  --input: #333333;
+  --ring: #ef4444;
+  --radius: 0.75rem;
+
+  /* Shadows */
+  --shadow-premium: 0 20px 60px -15px rgba(239, 68, 68, 0.5);
+  --shadow-glow: 0 0 60px rgba(239, 68, 68, 0.3);
+  --shadow-card: 0 10px 40px -10px rgba(0, 0, 0, 0.6);
+  --shadow-elevated: 0 30px 80px -20px rgba(220, 38, 38, 0.4);
+
+  /* Transitions */
+  --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: all 0.2s ease;
+}
+
+/* Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #dc2626, #ef4444);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ef4444, #f87171);
+}
+
+/* Utility Classes */
+.text-gradient {
+  background: linear-gradient(135deg, #dc2626, #f87171);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.shadow-premium {
+  box-shadow: var(--shadow-premium);
+}
+
+.shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+.hover-lift {
+  transition: var(--transition-smooth);
+}
+
+.hover-lift:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: var(--shadow-elevated);
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.6); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Glass Effect */
+.glass-effect {
+  background: rgba(20, 20, 20, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
