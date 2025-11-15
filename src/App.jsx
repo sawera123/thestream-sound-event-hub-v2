@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import Navigation from "./components/Navigation";
 import Home from "./pages/Home";
 import Videos from "./pages/Videos";
@@ -49,7 +49,7 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <HashRouter>
         <Navigation />
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -71,7 +71,7 @@ const App = () => {
           />
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </BrowserRouter>
+     </HashRouter>
     </QueryClientProvider>
   );
 };
