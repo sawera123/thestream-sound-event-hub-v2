@@ -1,17 +1,71 @@
 import React from 'react';
 import { Check, Zap } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '../lib/supabase'; // Adjust path as needed
 import './Subscription.css';
 
 const Subscription = () => {
+  const queryClient = useQueryClient();
+
+  // Fetch current user's subscription
+  const { data: userSubscription, isLoading } = useQuery({
+    queryKey: ['userSubscription'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not logged in');
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('subscription_plan, subscription_expires_at')
+        .eq('id', user.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!supabase.auth.getSession(), // Only fetch if logged in
+  });
+
+  // Mutation to update subscription (dummy - in real, integrate Stripe)
+  const updateSubscription = useMutation({
+    mutationFn: async (newPlan) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const expiresAt = new Date();
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1); // 1 year for paid plans
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          subscription_plan: newPlan,
+          subscription_expires_at: newPlan === 'free' ? null : expiresAt.toISOString() 
+        })
+        .eq('id', user.id);
+      if (error) throw error;
+      
+      // Optional: Insert to subscriptions table
+      await supabase.from('subscriptions').insert({
+        user_id: user.id,
+        plan: newPlan,
+        status: 'active',
+        current_period_end: newPlan === 'free' ? null : expiresAt.toISOString(),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['userSubscription']);
+      alert('Subscription updated successfully!');
+    },
+    onError: (error) => {
+      console.error('Subscription update error:', error);
+      alert(`Error: ${error.message}`);
+    },
+  });
+
   const plans = [
     {
       id: 'free',
       name: 'Free',
       price: '$0',
       period: 'forever',
-      uploads: '5 music videos',
+      uploads: '3 music videos',
       features: [
-        'Upload up to 5 music videos',
+        'Upload up to 3 music videos',
         'Basic analytics',
         'Standard quality streaming',
         'Community support'
@@ -20,28 +74,28 @@ const Subscription = () => {
       popular: false
     },
     {
-      id: 'premium',
-      name: 'Premium',
+      id: 'standard',
+      name: 'Standard',
       price: '$49',
       period: 'per year',
-      uploads: '100 music videos',
+      uploads: '10 music videos',
       features: [
-        'Upload up to 100 music videos',
+        'Upload up to 10 music videos',
         'Advanced analytics & insights',
         'HD quality streaming',
         'Priority support',
         'Custom branding',
         'Ad-free experience'
       ],
-      buttonText: 'Upgrade to Premium',
+      buttonText: 'Upgrade to Standard',
       popular: true
     },
     {
-      id: 'unlimited',
-      name: 'Unlimited',
+      id: 'premium',
+      name: 'Premium',
       price: '$149',
       period: 'per year',
-      uploads: '1000+ music videos',
+      uploads: 'Unlimited music videos',
       features: [
         'Unlimited music video uploads',
         'Real-time analytics dashboard',
@@ -52,10 +106,22 @@ const Subscription = () => {
         'API access',
         'Dedicated account manager'
       ],
-      buttonText: 'Go Unlimited',
+      buttonText: 'Go Premium',
       popular: false
     }
   ];
+
+  if (isLoading) return <div>Loading subscription...</div>;
+
+  const currentPlan = userSubscription?.subscription_plan || 'free';
+
+  const handleSubscribe = (planId) => {
+    if (planId === currentPlan) {
+      alert('You are already on this plan.');
+      return;
+    }
+    updateSubscription.mutate(planId);
+  };
 
   return (
     <div className="subscription-page">
@@ -66,18 +132,24 @@ const Subscription = () => {
         <p className="subscription-subtitle">
           Unlock unlimited creativity with our premium subscription plans
         </p>
+        <p className="current-plan">Current Plan: {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}</p>
       </div>
 
       <div className="plans-container">
         {plans.map((plan) => (
           <div 
             key={plan.id} 
-            className={`plan-card ${plan.popular ? 'popular' : ''}`}
+            className={`plan-card ${plan.popular ? 'popular' : ''} ${plan.id === currentPlan ? 'current' : ''}`}
           >
             {plan.popular && (
               <div className="popular-badge">
                 <Zap size={14} fill="currentColor" />
                 Most Popular
+              </div>
+            )}
+            {plan.id === currentPlan && (
+              <div className="current-badge">
+                Current Plan
               </div>
             )}
             
@@ -99,8 +171,12 @@ const Subscription = () => {
               ))}
             </ul>
 
-            <button className={`plan-button ${plan.popular ? 'premium' : ''}`}>
-              {plan.buttonText}
+            <button 
+              className={`plan-button ${plan.popular ? 'premium' : ''}`}
+              onClick={() => handleSubscribe(plan.id)}
+              disabled={updateSubscription.isLoading || plan.id === currentPlan}
+            >
+              {updateSubscription.isLoading ? 'Updating...' : plan.buttonText}
             </button>
           </div>
         ))}
@@ -114,16 +190,16 @@ const Subscription = () => {
               <tr>
                 <th>Features</th>
                 <th>Free</th>
+                <th>Standard</th>
                 <th>Premium</th>
-                <th>Unlimited</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td>Music Video Uploads</td>
-                <td>5</td>
-                <td>100</td>
-                <td>1000+</td>
+                <td>3</td>
+                <td>10</td>
+                <td>Unlimited</td>
               </tr>
               <tr>
                 <td>Video Quality</td>

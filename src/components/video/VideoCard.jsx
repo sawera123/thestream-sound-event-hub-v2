@@ -1,22 +1,23 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, Eye, Circle } from 'lucide-react';
+import { Clock, Circle } from 'lucide-react';
 import './VideoCard.css';
 
 const VideoCard = ({ video }) => {
   const navigate = useNavigate();
 
   return (
-    <div 
-      className="video-card hover-lift" 
+    <div
+      className="video-card hover-lift"
       onClick={() => navigate(`/video/${video.id}`)}
     >
       <div className="video-thumbnail-wrapper">
         <img
-          src={video.thumbnail}
+          src={video.thumbnailUrl}   // already prepared in Videos.jsx
           alt={video.title}
           className="video-thumbnail"
         />
+
         <div className="video-duration">
           {video.isLive ? (
             <span className="live-badge">
@@ -26,22 +27,15 @@ const VideoCard = ({ video }) => {
           ) : (
             <span className="duration-badge">
               <Clock size={12} />
-              {video.duration}
+              {video.duration || "N/A"}
             </span>
           )}
         </div>
       </div>
+
       <div className="video-info">
         <h3 className="video-title">{video.title}</h3>
-        <p className="video-channel">{video.channel}</p>
-        <div className="video-meta">
-          <span className="meta-item">
-            <Eye size={14} />
-            {video.views} views
-          </span>
-          <span className="meta-separator">•</span>
-          <span className="meta-item">{video.uploadedAt}</span>
-        </div>
+        <p className="video-channel">{video.category}</p>
       </div>
     </div>
   );

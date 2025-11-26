@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Video, Mail, Lock, Eye, EyeOff, Zap } from 'lucide-react';
 import './Login.css';
+import { supabase } from '../lib/supabase';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -10,48 +11,36 @@ const Login = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    setError('');
+ // ... sab same, sirf handleLogin ka end change karo
 
-    // Validation
-    if (!email || !password) {
-      setError('Please fill in all fields');
-      return;
-    }
+const handleLogin = async (e) => {
+  e.preventDefault();
+  setError('');
 
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
+  if (error) {
+    setError(error.message);
+    return;
+  }
 
-    // Check for admin
-    const isAdmin = email === 'admin@example.com';
-    
-    // Simulate login success
-    const user = {
-      email: email,
-      name: email.split('@')[0],
-      isAdmin: isAdmin,
-      loginTime: new Date().toISOString()
-    };
+  // Profile fetch karo
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', data.user.id)
+    .single();
 
-    localStorage.setItem('user', JSON.stringify(user));
-
-    // Redirect based on role
-    if (isAdmin) {
-      navigate('/admin');
-    } else {
-      navigate('/');
-    }
-    
-    window.location.reload(); // Reload to update Navigation
-  };
+  // Agar admin hai toh /admin, warna home
+  if (profile?.role === 'admin') {
+    window.location.href = '/admin';   // ← Force full redirect (best for admin)
+  } else {
+    navigate('/');                     // Normal user ke liye
+  }
+};
 
   return (
     <div className="login-page">
