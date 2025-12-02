@@ -44,10 +44,47 @@ const MusicCard = ({ track, onPlay, onPurchase, isOwned = false }) => { // Added
     else if (data && data[0]) { setLikesCount(data[0].likes_count); setIsLiked(data[0].is_liked); }
   };
 
+  // 3. Handle Play (Unique View Logic - FIXED)
   const handlePlayClick = async () => {
+    // 1. Music turant play karein
     onPlay(track);
-    await supabase.from('content_views').insert({ content_id: track.id, user_id: currentUser?.id || null });
-    setViewsCount(prev => prev + 1);
+
+    // Agar guest user hai, toh views count mat badhao (ya badhao, apki marzi)
+    if (!currentUser) return;
+
+    try {
+      // 2. Check if view exists
+      const { data: existingView, error: fetchError } = await supabase
+        .from('content_views')
+        .select('id')
+        .eq('content_id', track.id)
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error("Fetch view error:", fetchError);
+        return;
+      }
+
+      // 3. Agar view NAHI hai, tabhi insert karo aur count badhao
+      if (!existingView) {
+        const { error: insertError } = await supabase.from('content_views').insert({
+          content_id: track.id,
+          user_id: currentUser.id
+        });
+
+        if (!insertError) {
+          // ✅ Ab sirf tabhi badhega jab DB mein nayi row banegi
+          setViewsCount(prev => prev + 1);
+        } else {
+          console.error("Insert view error:", insertError);
+        }
+      } else {
+        console.log("View already counted for this user.");
+      }
+    } catch (err) {
+      console.error("View Count Logic Error:", err);
+    }
   };
 
   return (
