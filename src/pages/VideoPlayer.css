@@ -1,65 +1,76 @@
-/* src/pages/VideoPlayer.css → UPDATED: 100% YouTube jaise dark theme, layout, styles */
+/* src/pages/VideoPlayer.css */
 
 .youtube-page {
   display: flex;
-  background-color: #0f0f0f;  /* YouTube dark bg */
+  background-color: #0f0f0f;
   color: #fff;
   min-height: 100vh;
-  padding: 20px;
+  padding: 24px;
+  gap: 24px;
 }
 
 .youtube-main-content {
   flex: 1;
   max-width: 1280px;
-  margin-right: 20px;
 }
 
 .youtube-sidebar {
-  width: 400px;  /* Sidebar width like YouTube */
+  width: 400px;
+  flex-shrink: 0;
 }
 
+/* Video Player */
 .youtube-video-wrapper {
   position: relative;
-  padding-top: 56.25%;  /* 16:9 aspect ratio */
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 */
+  background: black;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
 }
 
 .youtube-video-element {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: #000;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
 }
 
 .youtube-title {
-  font-size: 18px;
-  font-weight: 500;
-  margin: 12px 0 8px;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
 }
 
-.youtube-channel-bar {
+/* --- TOOLBAR: Channel + Actions --- */
+.youtube-toolbar {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
-.youtube-channel-info {
+.youtube-channel-section {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 .youtube-channel-avatar {
-  width: 40px;
-  height: 40px;
+  width: 40px; height: 40px;
   border-radius: 50%;
-  margin-right: 12px;
+}
+
+.channel-text {
+  display: flex;
+  flex-direction: column;
 }
 
 .youtube-channel-name {
-  font-weight: 500;
-  display: block;
+  font-weight: 600;
+  font-size: 16px;
 }
 
 .youtube-subscribers {
@@ -67,163 +78,194 @@
   color: #aaa;
 }
 
+.subscribe-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .youtube-subscribe-btn {
-  background: #cc0000;  /* YouTube red */
-  color: #fff;
+  background: #f1f1f1;
+  color: #0f0f0f;
   border: none;
-  padding: 10px 16px;
-  border-radius: 2px;
-  font-weight: 500;
+  padding: 0 16px;
+  height: 36px;
+  border-radius: 18px;
+  font-weight: 600;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  font-size: 14px;
 }
 
 .youtube-subscribe-btn.subscribed {
   background: #272727;
-  color: #aaa;
+  color: #f1f1f1;
 }
 
-.youtube-meta {
-  font-size: 14px;
-  color: #aaa;
-  margin-bottom: 12px;
+.youtube-subscribe-btn:hover { background: #d9d9d9; }
+.youtube-subscribe-btn.subscribed:hover { background: #3f3f3f; }
+
+.youtube-bell-btn {
+    background: #272727;
+    border: none;
+    color: white;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
 }
 
-.youtube-actions {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.youtube-like-btn, .youtube-action-btn {
-  background: #272727;
-  color: #fff;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 20px;
-  cursor: pointer;
+/* --- ACTION BUTTONS (Right Side) --- */
+.youtube-actions-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
 }
 
-.youtube-like-btn.liked {
-  background: #065fd4;  /* YouTube blue for liked */
-}
-
-.youtube-description {
+.tool-btn {
   background: #272727;
-  padding: 12px;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #fff;
-  white-space: pre-wrap;
-}
-
-.youtube-comments-section {
-  margin-top: 24px;
-}
-
-.youtube-comments-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 16px;
-}
-
-.youtube-add-comment {
+  color: white;
+  border: none;
+  height: 36px;
   display: flex;
-  align-items: flex-start;
-  margin-bottom: 24px;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.youtube-comment-avatar {
-  width: 40px;
-  height: 40px;
+.tool-btn:hover { background: #3f3f3f; }
+
+/* Like/Dislike Group */
+.like-dislike-group {
+  display: flex;
+  align-items: center;
+  background: #272727;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.like-btn {
+  padding: 0 12px 0 16px;
+  background: transparent;
+}
+
+.dislike-btn {
+  padding: 0 16px 0 10px;
+  background: transparent;
+}
+
+.like-btn.active, .dislike-btn.active {
+    color: #3ea6ff; /* Active Blue Color */
+}
+
+.vertical-line {
+  width: 1px;
+  height: 24px;
+  background: #555;
+}
+
+/* Pill Buttons (Share, Clip etc) */
+.pill-btn {
+  padding: 0 16px;
+  border-radius: 18px;
+}
+
+.circle-btn {
+  width: 36px;
+  padding: 0;
+  justify-content: center;
   border-radius: 50%;
-  margin-right: 12px;
 }
 
+/* --- DESCRIPTION BOX --- */
+.youtube-description-box {
+  background: #272727;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.youtube-description-box:hover {
+  background: #3f3f3f;
+}
+
+.desc-header {
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  gap: 10px;
+}
+
+.desc-text {
+  white-space: pre-wrap;
+  line-height: 1.4;
+}
+
+/* --- COMMENTS SECTION --- */
+.youtube-comments-section { margin-top: 24px; }
+.youtube-comments-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+
+.youtube-add-comment { display: flex; gap: 16px; margin-bottom: 30px; }
+.youtube-comment-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover;}
 .youtube-comment-input {
   flex: 1;
   background: transparent;
   border: none;
-  border-bottom: 1px solid #303030;
-  color: #fff;
+  border-bottom: 1px solid #3f3f3f;
+  color: white;
+  padding: 4px 0;
   font-size: 14px;
-  padding: 8px 0;
 }
-
+.youtube-comment-input:focus { border-bottom: 2px solid white; outline: none; }
 .youtube-comment-submit {
-  background: transparent;
-  color: #3ea6ff;
-  border: none;
-  font-weight: 500;
-  cursor: pointer;
-  margin-left: 16px;
+  background: #3ea6ff; color: black; border: none; padding: 8px 16px; border-radius: 18px; font-weight: 600; cursor: pointer;
 }
+.youtube-comment-submit:disabled { background: #272727; color: #717171; }
 
-.youtube-comments-list {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
+.youtube-comments-list { display: flex; flex-direction: column; gap: 20px; }
+.youtube-comment-item { display: flex; gap: 16px; }
 
-.youtube-comment-item {
-  display: flex;
-}
+/* Comment Item Styles */
+.comment-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.youtube-comment-author { font-size: 13px; font-weight: 600; margin-right: 5px; }
+.youtube-comment-time { font-size: 12px; color: #aaa; }
+.youtube-comment-text { font-size: 14px; line-height: 1.4; color: #f1f1f1; }
 
-.youtube-comment-content {
-  flex: 1;
-}
+/* Comment Actions */
+.comment-actions { display: flex; gap: 10px; margin-top: 8px; align-items: center; }
+.action-btn { background: none; border: none; color: #aaa; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 6px 8px; border-radius: 16px;}
+.action-btn:hover { background: #272727; color: white; }
+.action-btn.active { color: #3ea6ff; }
 
-.youtube-comment-author {
-  font-weight: 500;
-  font-size: 13px;
-}
-
-.youtube-comment-time {
-  font-size: 12px;
-  color: #aaa;
-  margin-left: 8px;
-}
-
-.youtube-comment-text {
-  font-size: 14px;
-  margin-top: 4px;
-}
-
-/* Sidebar Styles */
-.youtube-sidebar-title {
-  font-size: 14px;
-  color: #aaa;
-  margin-bottom: 16px;
-}
-
-.youtube-recommended-item {
-  display: flex;
-  margin-bottom: 16px;
-  cursor: pointer;
-}
-
-.youtube-recommended-thumb {
-  width: 168px;
-  height: 94px;
-  object-fit: cover;
-  margin-right: 8px;
-  border-radius: 8px;
-}
-
+/* Sidebar */
+.youtube-sidebar-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+.youtube-recommended-item { display: flex; gap: 8px; margin-bottom: 10px; cursor: pointer; }
+.youtube-recommended-thumb { width: 168px; height: 94px; border-radius: 8px; object-fit: cover; }
 .youtube-recommended-title {
-  font-size: 14px;
-  font-weight: 500;
-  display: block;
-  margin-bottom: 4px;
+  /* ... other styles ... */
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Existing line */
+  line-clamp: 2;         /* ADD THIS LINE to fix the warning */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
+/* Menu CSS (Already provided previously) */
+.menu-container { position: relative; }
+.menu-btn { background: none; border: none; color: #f1f1f1; cursor: pointer; padding: 8px; border-radius: 50%; opacity: 0; transition: opacity 0.2s; }
+.youtube-comment-item:hover .menu-btn { opacity: 1; }
+.menu-btn:hover { background: #272727; }
 
-.youtube-recommended-views {
-  font-size: 12px;
-  color: #aaa;
+.dropdown-menu {
+  position: absolute; right: 0; top: 100%;
+  background: #282828; border-radius: 8px; padding: 8px 0; z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5); width: 120px;
 }
+.dropdown-menu button {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 16px;
+  background: none; border: none; color: white; text-align: left; cursor: pointer; font-size: 14px;
+}
+.dropdown-menu button:hover { background: #3f3f3f; }

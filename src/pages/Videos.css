@@ -226,3 +226,30 @@
     justify-content: center;
   }
 }
+
+/* Go Live Button */
+.live-btn {
+  background-color: #ff0000; /* YouTube Red */
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.live-btn:hover {
+  background-color: #cc0000;
+}
+
+/* Ensure header aligns items properly */
+.videos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
