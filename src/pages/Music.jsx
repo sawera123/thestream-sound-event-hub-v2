@@ -11,6 +11,7 @@ const Music = () => {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [tracks, setTracks] = useState([]);
+  const [searchQuery, setSearchQuery] = useState(''); // ✅ Search state
   
   // Upload States
   const [uploading, setUploading] = useState(false);
@@ -148,24 +149,18 @@ const Music = () => {
     }
   };
 
-  // 3. Handle Stripe Payment (Correct Logic)
+  // 3. Handle Stripe Payment
   const handleConfirmPurchase = async () => {
     if (!selectedTrack || !userId) return alert("Please login!");
     setUploading(true);
 
     try {
-      // Determines origin based on environment (fix for HashRouter)
-      // If you are using HashRouter (/#/), ensure this matches your URL structure
       const originUrl = window.location.port === "8080" 
-        ? 'http://localhost:8080/#' 
+        ? ' https://thestream-sound-event-hub-v2.vercel.app/' 
         : window.location.origin;
 
       const { data, error } = await supabase.functions.invoke('stripe-checkout', {
-        body: {
-          track: selectedTrack,
-          userId: userId,
-          origin: originUrl 
-        },
+        body: { track: selectedTrack, userId: userId, origin: originUrl },
       });
 
       if (error) throw error;
@@ -200,20 +195,43 @@ const Music = () => {
       <div className="music-header">
         <div><h1 className="music-title">Music Marketplace</h1><p className="music-subtitle">Discover exclusive tracks</p></div>
         <div className="header-actions">
+          <div className="search-wrapper">
+            <Search size={18} />
+            <input
+              type="text"
+              placeholder="Search music..."
+              className="search-music"
+              value={searchQuery}                 
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
+        
           <button className="upload-music-btn" onClick={() => setShowUploadModal(true)}><Upload size={18} /> Upload Track</button>
         </div>
       </div>
 
       <div className="music-grid">
-        {tracks.map(track => (
-          <MusicCard key={track.id} track={track} onPlay={handlePlay} onPurchase={handlePurchase} />
-        ))}
+        {tracks
+          .filter(track =>
+            track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            track.artist.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+          .map(track => (
+            <MusicCard
+              key={track.id}
+              track={track}
+              onPlay={handlePlay}
+              onPurchase={handlePurchase}
+            />
+          ))
+        }
       </div>
 
       {/* UPLOAD MODAL */}
       {showUploadModal && (
         <div className="modal-overlay" onClick={() => setShowUploadModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <button className="modal-close-btn" onClick={() => setShowUploadModal(false)} aria-label="Close">×</button>
             <h2 className="modal-title">Upload Audio</h2>
             {uploadError && <p className="text-red-500 font-bold mb-4">{uploadError}</p>}
             <form onSubmit={handleUpload}>
@@ -229,10 +247,8 @@ const Music = () => {
               </div>
               <div className="form-group"><label>Title</label><input type="text" value={title} onChange={e => setTitle(e.target.value)} required /></div>
               <div className="form-group"><label>Price</label><input type="number" value={price} onChange={e => setPrice(e.target.value)} required /></div>
-              
               <div className="modal-actions">
                 <button type="button" className="modal-btn cancel" onClick={() => setShowUploadModal(false)}>Cancel</button>
-                {/* Fixed: Only Upload button here */}
                 <button type="submit" className="modal-btn submit" disabled={uploading || (!isSubscribed && uploadCount >= 3)}>
                   {uploading ? 'Uploading...' : 'Publish'}
                 </button>
@@ -242,7 +258,7 @@ const Music = () => {
         </div>
       )}
 
-      {/* PURCHASE MODAL - FIXED */}
+      {/* PURCHASE MODAL */}
       {showPurchaseModal && selectedTrack && (
         <div className="modal-overlay" onClick={() => setShowPurchaseModal(false)}>
           <div className="modal-content purchase-modal" onClick={e => e.stopPropagation()}>
@@ -256,10 +272,8 @@ const Music = () => {
               <div className="detail-row"><span>Platform Fee</span><span className="detail-value">30%</span></div>
               <div className="detail-row total"><span>Total</span><span className="detail-value">${selectedTrack.price}</span></div>
             </div>
-            
             <div className="modal-actions">
               <button className="modal-btn cancel" onClick={() => setShowPurchaseModal(false)}>Cancel</button>
-              {/* Fixed: Only Pay button here */}
               <button className="modal-btn submit" onClick={handleConfirmPurchase} disabled={uploading}>
                 {uploading ? 'Processing...' : `Pay $${selectedTrack.price}`}
               </button>
@@ -267,8 +281,15 @@ const Music = () => {
           </div>
         </div>
       )}
+     {currentTrack && (
+  <MusicPlayer
+    currentTrack={currentTrack}
+    onNext={handleNext}
+    onPrev={handlePrev}
+    onClose={() => setCurrentTrack(null)} // <--- important
+  />
+)}
 
-      <MusicPlayer currentTrack={currentTrack} onNext={handleNext} onPrev={handlePrev} />
     </div>
   );
 };
