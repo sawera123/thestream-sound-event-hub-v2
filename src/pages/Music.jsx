@@ -11,6 +11,7 @@ const Music = () => {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [tracks, setTracks] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Upload States
   const [uploading, setUploading] = useState(false);
@@ -92,29 +93,38 @@ const Music = () => {
     setUploading(true); setUploadError('');
 
     try {
-      if (!userId) throw new Error('User not authenticated');
+        if (!userId) throw new Error('User not authenticated');
 
-      // IP Check
-      const ipRes = await fetch('https://api.ipify.org?format=json');
-      const ipData = await ipRes.json();
-      const userIp = ipData.ip;
+        // IP Check
+        const ipRes = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipRes.json();
+        const userIp = ipData.ip;
 
-      // Limit Check (Secure RPC)
-      const { data: limitData, error: limitError } = await supabase
-        .rpc('check_upload_limits', { user_id: userId, ip_address: userIp });
-      if (limitError) throw limitError;
-      
-      const currentUploads = limitData?.count || 0;
-      
-      // Subscription Logic
-      const { data: subData } = await supabase.from('subscriptions').select('status, plan').eq('user_id', userId).maybeSingle();
-      const isPaid = subData?.status === 'active' && ['standard', 'premium'].includes(subData?.plan);
-      const limit = isPaid ? 10 : 3;
+        // Limit Check (Secure RPC)
+        const { data: limitData, error: limitError } = await supabase
+            .rpc('check_upload_limits', { 
+                p_user_id: userId, // <-- FIX: Corrected argument name
+                p_ip_address: userIp // <-- FIX: Corrected argument name
+            });
+        
+        if (limitError) throw limitError;
+        
+        // --- FIX: Safely access data from RPC response array ---
+        const currentUploadCount = parseInt(limitData[0]?.count || 0);
+        const isSubscribedFromDB = limitData[0]?.is_subscribed || false;
+        
+        const FREE_LIMIT = 3;
+        const PAID_LIMIT = 10;
+        
+        // Limit set karein
+        const userLimit = isSubscribedFromDB ? PAID_LIMIT : FREE_LIMIT; 
 
-      if (currentUploads >= limit) {
-        setUploadError(isPaid ? "Max 10 uploads reached." : "Limit reached (3). Upgrade to Premium.");
-        setUploading(false); return;
-      }
+        // 🚨 FINAL LIMIT ENFORCEMENT 🚨
+        if (currentUploadCount >= userLimit) {
+            setUploadError(`UPLOAD FAILED: Limit reached. You have uploaded ${currentUploadCount} of ${userLimit} items. Please upgrade.`);
+            setUploading(false); 
+            return; // 🛑 UPLOAD ROKO
+        }
 
       // Upload Files
       const fileExt = audioFile.name.split('.').pop();
@@ -195,25 +205,48 @@ const Music = () => {
     setCurrentTrack(tracks[(currentIndex - 1 + tracks.length) % tracks.length]);
   };
 
-  return (
+   return (
     <div className="music-page">
       <div className="music-header">
         <div><h1 className="music-title">Music Marketplace</h1><p className="music-subtitle">Discover exclusive tracks</p></div>
         <div className="header-actions">
+          <div className="search-wrapper">
+            <Search size={18} />
+            <input
+              type="text"
+              placeholder="Search music..."
+              className="search-music"
+              value={searchQuery}                 
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
+        
           <button className="upload-music-btn" onClick={() => setShowUploadModal(true)}><Upload size={18} /> Upload Track</button>
         </div>
       </div>
 
       <div className="music-grid">
-        {tracks.map(track => (
-          <MusicCard key={track.id} track={track} onPlay={handlePlay} onPurchase={handlePurchase} />
-        ))}
+        {tracks
+          .filter(track =>
+            track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            track.artist.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+          .map(track => (
+            <MusicCard
+              key={track.id}
+              track={track}
+              onPlay={handlePlay}
+              onPurchase={handlePurchase}
+            />
+          ))
+        }
       </div>
 
       {/* UPLOAD MODAL */}
       {showUploadModal && (
         <div className="modal-overlay" onClick={() => setShowUploadModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <button className="modal-close-btn" onClick={() => setShowUploadModal(false)} aria-label="Close">×</button>
             <h2 className="modal-title">Upload Audio</h2>
             {uploadError && <p className="text-red-500 font-bold mb-4">{uploadError}</p>}
             <form onSubmit={handleUpload}>
@@ -229,10 +262,8 @@ const Music = () => {
               </div>
               <div className="form-group"><label>Title</label><input type="text" value={title} onChange={e => setTitle(e.target.value)} required /></div>
               <div className="form-group"><label>Price</label><input type="number" value={price} onChange={e => setPrice(e.target.value)} required /></div>
-              
               <div className="modal-actions">
                 <button type="button" className="modal-btn cancel" onClick={() => setShowUploadModal(false)}>Cancel</button>
-                {/* Fixed: Only Upload button here */}
                 <button type="submit" className="modal-btn submit" disabled={uploading || (!isSubscribed && uploadCount >= 3)}>
                   {uploading ? 'Uploading...' : 'Publish'}
                 </button>
@@ -242,7 +273,7 @@ const Music = () => {
         </div>
       )}
 
-      {/* PURCHASE MODAL - FIXED */}
+      {/* PURCHASE MODAL */}
       {showPurchaseModal && selectedTrack && (
         <div className="modal-overlay" onClick={() => setShowPurchaseModal(false)}>
           <div className="modal-content purchase-modal" onClick={e => e.stopPropagation()}>
@@ -256,10 +287,8 @@ const Music = () => {
               <div className="detail-row"><span>Platform Fee</span><span className="detail-value">30%</span></div>
               <div className="detail-row total"><span>Total</span><span className="detail-value">${selectedTrack.price}</span></div>
             </div>
-            
             <div className="modal-actions">
               <button className="modal-btn cancel" onClick={() => setShowPurchaseModal(false)}>Cancel</button>
-              {/* Fixed: Only Pay button here */}
               <button className="modal-btn submit" onClick={handleConfirmPurchase} disabled={uploading}>
                 {uploading ? 'Processing...' : `Pay $${selectedTrack.price}`}
               </button>
@@ -267,8 +296,15 @@ const Music = () => {
           </div>
         </div>
       )}
+     {currentTrack && (
+  <MusicPlayer
+    currentTrack={currentTrack}
+    onNext={handleNext}
+    onPrev={handlePrev}
+    onClose={() => setCurrentTrack(null)} // <--- important
+  />
+)}
 
-      <MusicPlayer currentTrack={currentTrack} onNext={handleNext} onPrev={handlePrev} />
     </div>
   );
 };

@@ -16,8 +16,8 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 import { supabase } from "./lib/supabase";
 import UserProfile from "./pages/UserProfile";
-import PaymentSuccess from './pages/PaymentSuccess';
-import Library from './pages/Library';
+import PaymentSuccess from "./pages/PaymentSuccess";
+import Library from "./pages/Library";
 const queryClient = new QueryClient();
 
 // Sabse safe Protected Route
@@ -47,12 +47,12 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
     if (!isAdmin) {
       // Profile se bhi check kar lo
       supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
+        .from("profiles")
+        .select("role")
+        .eq("id", session.user.id)
         .single()
         .then(({ data }) => {
-          if (data?.role !== 'admin') {
+          if (data?.role !== "admin") {
             return <Navigate to="/" replace />;
           }
         });
@@ -74,14 +74,15 @@ const App = () => {
           <Route path="/privacy" element={<PrivacyPolicy />} />
 
           <Route path="/" element={<Home />} />
-          <Route path="/profile" element={<UserProfile />}/>
+          <Route path="/profile" element={<UserProfile />} />
+
           <Route path="/videos" element={<Videos />} />
           <Route path="/video/:id" element={<VideoPlayer />} />
           <Route path="/music" element={<Music />} />
           <Route path="/events" element={<Events />} />
           <Route path="/subscription" element={<Subscription />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
-<Route path="/library" element={<Library />} />
+          <Route path="/library" element={<Library />} />
           {/* Admin Route */}
           <Route
             path="/admin"
