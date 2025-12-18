@@ -557,6 +557,12 @@ const Videos = () => {
           },
         );
         if (limitError) throw limitError;
+        const stats = limitData[0];
+        console.log("--- USER UPLOAD STATS ---");
+        console.log("Current Upload Count (24h):", stats.count);
+        console.log("Is Premium/Subscribed:", stats.is_subscribed);
+        console.log("Subscription Expiry Date:", stats.expiry_date);
+        console.log("--------------------------");
 
         const currentUploadCount = parseInt(limitData[0]?.count || 0);
         const isSubscribed = limitData[0]?.is_subscribed || false;
