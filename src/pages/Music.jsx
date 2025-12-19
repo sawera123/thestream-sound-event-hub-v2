@@ -11,7 +11,7 @@ const Music = () => {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [tracks, setTracks] = useState([]);
-  const [searchQuery, setSearchQuery] = useState(''); // ✅ Search state
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Upload States
   const [uploading, setUploading] = useState(false);
@@ -93,29 +93,38 @@ const Music = () => {
     setUploading(true); setUploadError('');
 
     try {
-      if (!userId) throw new Error('User not authenticated');
+        if (!userId) throw new Error('User not authenticated');
 
-      // IP Check
-      const ipRes = await fetch('https://api.ipify.org?format=json');
-      const ipData = await ipRes.json();
-      const userIp = ipData.ip;
+        // IP Check
+        const ipRes = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipRes.json();
+        const userIp = ipData.ip;
 
-      // Limit Check (Secure RPC)
-      const { data: limitData, error: limitError } = await supabase
-        .rpc('check_upload_limits', { user_id: userId, ip_address: userIp });
-      if (limitError) throw limitError;
-      
-      const currentUploads = limitData?.count || 0;
-      
-      // Subscription Logic
-      const { data: subData } = await supabase.from('subscriptions').select('status, plan').eq('user_id', userId).maybeSingle();
-      const isPaid = subData?.status === 'active' && ['standard', 'premium'].includes(subData?.plan);
-      const limit = isPaid ? 10 : 3;
+        // Limit Check (Secure RPC)
+        const { data: limitData, error: limitError } = await supabase
+            .rpc('check_upload_limits', { 
+                p_user_id: userId, // <-- FIX: Corrected argument name
+                p_ip_address: userIp // <-- FIX: Corrected argument name
+            });
+        
+        if (limitError) throw limitError;
+        
+        // --- FIX: Safely access data from RPC response array ---
+        const currentUploadCount = parseInt(limitData[0]?.count || 0);
+        const isSubscribedFromDB = limitData[0]?.is_subscribed || false;
+        
+        const FREE_LIMIT = 3;
+        const PAID_LIMIT = 10;
+        
+        // Limit set karein
+        const userLimit = isSubscribedFromDB ? PAID_LIMIT : FREE_LIMIT; 
 
-      if (currentUploads >= limit) {
-        setUploadError(isPaid ? "Max 10 uploads reached." : "Limit reached (3). Upgrade to Premium.");
-        setUploading(false); return;
-      }
+        // 🚨 FINAL LIMIT ENFORCEMENT 🚨
+        if (currentUploadCount >= userLimit) {
+            setUploadError(`UPLOAD FAILED: Limit reached. You have uploaded ${currentUploadCount} of ${userLimit} items. Please upgrade.`);
+            setUploading(false); 
+            return; // 🛑 UPLOAD ROKO
+        }
 
       // Upload Files
       const fileExt = audioFile.name.split('.').pop();
@@ -190,7 +199,7 @@ const Music = () => {
     setCurrentTrack(tracks[(currentIndex - 1 + tracks.length) % tracks.length]);
   };
 
-  return (
+   return (
     <div className="music-page">
       <div className="music-header">
         <div><h1 className="music-title">Music Marketplace</h1><p className="music-subtitle">Discover exclusive tracks</p></div>

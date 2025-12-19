@@ -2,24 +2,49 @@
    MAIN SIDEBAR (YOUTUBE DARK)
 -------------------------------*/
 .video-sidebar {
-  width: 240px;
-  background: #0f0f0f;      /* PURE YOUTUBE BLACK */
-  border-right: 1px solid #222;
-  position: fixed;          /* FIX: videos niche nahi jayenge */
-  top: 64px;                /* tumhare navbar ki height */
-  height: calc(100vh - 64px);
-  overflow-y: auto;
-  transition: width 0.3s ease;
-  z-index: 999;
-  padding-top: 10px;
+    width: 240px;
+    background: #0f0f0f; /* PURE YOUTUBE BLACK */
+    border-right: 1px solid #222;
+    position: fixed; /* FIX: videos niche nahi jayenge */
+    top: 64px; /* tumhare navbar ki height */
+    height: calc(100vh - 64px);
+    overflow-y: auto;
+    transition: width 0.3s ease;
+    z-index: 999;
+    padding-top: 10px;
+}
+
+.sidebar-item svg {
+    min-width: 22px;
+    /*vertical-align: middle;*/
+}
+
+.subscription-avatar {
+    margin: 0;
+    width: 22px;
+    min-width: 22px; /* Ensure it doesn't shrink */
+    height: 22px;
+    border-radius: 50%;
+    object-fit: cover;
+
+    /* 💡 FIX: Agar alignment issue ho toh yeh add karein */
+    vertical-align: middle;
 }
 
 /* Desktop only */
 @media (min-width: 1024px) {
-  .video-sidebar {
-    display: block;
-  }
+    .video-sidebar {
+        display: block;
+    }
 }
+
+/* Mobile */
+@media (max-width: 1024px) {
+    .video-sidebar {
+        display: none;
+    }
+}
+
 
 /* Mobile */
 @media (max-width: 1024px) {
@@ -32,87 +57,115 @@
          COLLAPSE MODE
 -------------------------------*/
 .video-sidebar.collapsed {
-  width: 70px;
+    width: 70px;
 }
 
 .collapse-btn {
-  background: #0f0f0f;
-  border: none;
-  width: 100%;
-  cursor: pointer;
-  padding: 10px;
-  display: flex;
-  justify-content: center;
-  border-bottom: 1px solid #222;
-  color: white;
+    background: #0f0f0f;
+    border: none;
+    width: 100%;
+    cursor: pointer;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    border-bottom: 1px solid #222;
+    color: white;
 }
 
 /* ------------------------------
            SIDEBAR CONTENT
 -------------------------------*/
 .sidebar-content {
-  padding: 10px 0;
+    padding: 10px 0;
 }
 
 .sidebar-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 12px 18px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: #fff;
-  font-size: 14px;
-  transition: 0.2s ease;
-  border-radius: 8px;
-  overflow: hidden;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 12px 18px;
+    gap: 15px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: #fff;
+    font-size: 14px;
+    transition: 0.2s ease;
+    border-radius: 8px; /* Double border-radius hataya */
+    overflow: hidden;
+    /*margin: 0; /* No extra margin */
 }
 
 
 .sidebar-item:hover {
-  background: #272727;     /* YT hover */
+    background: #272727; /* YT hover */
 }
 
 .sidebar-item.active {
-  background: #3a3a3a;     /* YT active */
-  font-weight: 600;
+    background: #3a3a3a; /* YT active */
+    font-weight: 600;
 }
 
 /* ------------------------------
           HEADINGS
 -------------------------------*/
 .section-title {
-  padding: 10px 18px;
-  color: #aaa;
-  font-size: 13px;
-  font-weight: 600;
+    padding: 10px 18px;
+    color: #aaa;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 /* ------------------------------
             SCROLLBAR
 -------------------------------*/
 .video-sidebar::-webkit-scrollbar {
-  width: 6px;
+    width: 6px;
 }
 
 .video-sidebar::-webkit-scrollbar-thumb {
-  background: #444;
-  border-radius: 50px;
+    background: #444;
+    border-radius: 50px;
 }
 
 /* ------------------------------
        EMPTY STATE TEXT
 -------------------------------*/
 .empty-text {
-  padding: 12px 18px;
-  color: #777;
-  font-size: 13px;
+    padding: 12px 18px;
+    color: #777;
+    font-size: 13px;
 }
 .main-content {
-  margin-left: 240px; /* sidebar width */
+    margin-left: 240px; /* sidebar width */
 }
 .main-content.collapsed {
-  margin-left: 70px;
+    margin-left: 70px;
+}
+
+.subscription-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+}
+.sidebar-content button.sidebar-item.subscription-item {
+    /* Reset koi bhi extra browser margin */
+    margin: 0;
+
+    /* Padding ko control karein, khaaskar vertical padding */
+    padding: 10px 18px;
+
+    /* Yeh dobara confirm karta hai ki flexbox hi use ho */
+    display: flex;
+    /*align-items: center;*/
+
+    /* Height ko content ke hisaab se tight rakhein */
+    height: 40px; /* Optional: Agar aap ek fixed height (YouTube jaisa) chahte hain */
+    min-height: 40px;
+}
+
+.sidebar-content button.sidebar-item.subscription-item img {
+    /* Avatar par koi extra margin na ho */
+    margin: 0;
 }
