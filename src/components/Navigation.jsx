@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Video, Music, Calendar, Menu, X, Search, Bell, User, Zap, LogOut } from 'lucide-react';
 import './Navigation.css';
@@ -12,7 +12,7 @@ const Navigation = () => {
 
   const location = useLocation();
   const navigate = useNavigate();
-
+  const userMenuRef = useRef(null);
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -20,14 +20,17 @@ const Navigation = () => {
         // Profile fetch karo
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role, full_name')
+          .select('role, full_name, avatar_url')
           .eq('id', session.user.id)
           .single();
 
         const userName = profile?.full_name || session.user.email?.split('@')[0] || 'User';
         const userEmail = session.user.email || '';
-
-        setUser({ name: userName, email: userEmail });
+        setUser({ 
+        name: userName, 
+        email: userEmail,
+        avatar_url: profile?.avatar_url || null
+      });
         setIsAdmin((profile?.role === 'admin') || session.user.email === 'admin@example.com');
       } else {
         setUser({ name: 'Guest', email: '' });
@@ -53,7 +56,19 @@ const Navigation = () => {
     await supabase.auth.signOut();
     navigate('/login');
   };
-
+  //close user menu on outside click 
+  useEffect(()=>{
+    const handleClickOutside = (event) =>{
+      if(userMenuRef.current && !userMenuRef.current.contains(event.target)){
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () =>{
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+  },[]);
+  //end user meny outside click
   const navItems = [
     { path: '/', icon: Home, label: 'Home' },
     { path: '/videos', icon: Video, label: 'Videos' },
@@ -88,31 +103,66 @@ const Navigation = () => {
           <Link to="/subscription" className="upgrade-btn"><Zap size={18} fill="currentColor" /><span>Upgrade</span></Link>
           <button className="nav-action-btn"><Bell size={20} /></button>
 
-          <div className="user-menu-wrapper">
-            <button className="nav-action-btn user-btn" onClick={() => setShowUserMenu(!showUserMenu)}>
-              <User size={20} />
-            </button>
+          <div className="user-menu-wrapper" ref={userMenuRef}>
+            <button
+                className="profile-circle-btn"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+              >
+                {user?.avatar_url ? (
+                  <img src={user.avatar_url} alt="User" className="profile-avatar-img" />
+                ) : (
+                  user?.name?.charAt(0).toUpperCase()
+                )}
+              </button>
+
 
             {showUserMenu && (
-              <div className="user-dropdown">
-                <div className="user-info">
-                  <p className="user-name">{user.name}</p>
-                  <p className="user-email">{user.email}</p>
+                <div className="user-dropdown">
+
+                  {/* USER TOP INFO */}
+                  <div className="user-info-block">
+                    <div className="user-info-avatar">
+                      {user?.avatar_url ? (
+                        <img src={user.avatar_url} alt="User" className="dropdown-avatar-img" />
+                      ) : (
+                        user?.name?.charAt(0).toUpperCase()
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="user-info-name">{user?.name}</p>
+                      <p className="user-info-email">{user?.email}</p>
+
+                      <Link to="/profile" className="view-profile-link">
+                        View your channel
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="dropdown-divider"></div>
+
+                  {/* Admin Button */}
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      className="dropdown-item"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <Zap size={16} />
+                      <span>Admin Panel</span>
+                    </Link>
+                  )}
+
+                  {/* Logout */}
+                  {user.email && (
+                    <button className="dropdown-item logout-btn" onClick={handleLogout}>
+                      <LogOut size={16} />
+                      <span>Sign Out</span>
+                    </button>
+                  )}
                 </div>
+              )}
 
-                {isAdmin && (
-                  <Link to="/admin" className="dropdown-item admin-link" onClick={() => setShowUserMenu(false)}>
-                    <Zap size={16} /> <span>Admin Panel</span>
-                  </Link>
-                )}
-
-                {user.email && (
-                  <button className="dropdown-item logout-btn" onClick={handleLogout}>
-                    <LogOut size={16} /> <span>Logout</span>
-                  </button>
-                )}
-              </div>
-            )}
           </div>
         </div>
 

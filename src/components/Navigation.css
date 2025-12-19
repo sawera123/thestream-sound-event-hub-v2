@@ -57,7 +57,7 @@
 .nav-search {
   display: none;
   flex: 1;
-  max-width: 36rem;
+  max-width: 16rem;
   align-items: center;
   gap: 0.5rem;
   background-color: var(--secondary);
@@ -336,4 +336,115 @@
   .logo-text {
     display: inline;
   }
+}
+#google_translate_element select {
+ width: 20px;        /* compact width */
+  height: 30px;       /* match button height */
+  padding: 0;         /* reduce padding */
+  font-size: 12px;    /* smaller text */
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  vertical-align: middle;
+  background-color: #fff;
+  cursor: pointer;
+ margin-left: 200px;
+}
+
+
+/* Profile Circle */
+.profile-circle-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #009688;
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Dropdown */
+.user-dropdown {
+  position: absolute;
+  top: 45px;
+  right: 0;
+  width: 260px;
+  background: #1f1f1f;
+  border-radius: 10px;
+  padding: 12px 0;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  z-index: 999;
+}
+
+/* User block like YouTube */
+.user-info-block {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  gap: 12px;
+}
+
+.user-info-avatar {
+  width: 42px;
+  height: 42px;
+  background: #009688;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  font-size: 18px;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.user-info-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: white;
+}
+
+.user-info-email {
+  font-size: 12px;
+  color: #ccc;
+}
+
+.view-profile-link {
+  margin-top: 4px;
+  display: block;
+  font-size: 12px;
+  color: #3ea6ff;
+  text-decoration: none;
+}
+
+/* Divider */
+.dropdown-divider {
+  width: 100%;
+  height: 1px;
+  background: #333;
+  margin: 8px 0;
+}
+
+/* Dropdown items */
+.dropdown-item {
+  width: 100%;
+  padding: 10px 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: white;
+  text-decoration: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.dropdown-item:hover {
+  background: #2a2a2a;
+}
+
+.logout-btn {
+  color: #ff6b6b;
 }

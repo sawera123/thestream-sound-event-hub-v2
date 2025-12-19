@@ -74,7 +74,7 @@ const MusicCard = ({ track, onPlay, onPurchase, isOwned = false }) => { // Added
         });
 
         if (!insertError) {
-          // ✅ Ab sirf tabhi badhega jab DB mein nayi row banegi
+          //  Ab sirf tabhi badhega jab DB mein nayi row banegi
           setViewsCount(prev => prev + 1);
         } else {
           console.error("Insert view error:", insertError);
@@ -119,7 +119,7 @@ const MusicCard = ({ track, onPlay, onPurchase, isOwned = false }) => { // Added
           <button 
             className={`action-btn ${isOwned ? 'download-btn' : 'purchase-btn'}`} 
             onClick={() => onPurchase(track)}
-            style={isOwned ? { backgroundColor: '#3ea6ff', color: 'black' } : {}}
+            style={isOwned ? { backgroundColor: '#b71105ff', color: 'black' } : {}}
           >
             {isOwned ? <Download size={16} /> : <ShoppingCart size={16} />}
             <span>{isOwned ? 'Download' : 'Buy Now'}</span>
