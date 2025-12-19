@@ -119,7 +119,7 @@ const UserProfile = () => {
                 <button 
                     className="btn-upload-video" 
                     onClick={() => navigate('/videos')}
-                    style={{ background: '#3ea6ff', color: 'black', border: 'none', padding: '10px 20px', borderRadius: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}
+                    style={{ background: '#ff0000', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}
                 >
                     <FaUpload /> Upload New Video
                 </button>
@@ -135,7 +135,7 @@ const UserProfile = () => {
                 <button 
                     className="btn-upload-music" 
                     onClick={() => navigate('/music')}
-                    style={{ background: '#3ea6ff', color: 'black', border: 'none', padding: '10px 20px', borderRadius: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}
+                    style={{ background: '#ff0000', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}
                 >
                     <FaUpload /> Upload New Track
                 </button>

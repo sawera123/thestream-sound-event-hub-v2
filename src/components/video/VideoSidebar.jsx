@@ -162,6 +162,7 @@ const VideoSidebar = ({ activeCategory, onCategoryChange, onCollapse }) => {
            {" "}
       <div className="sidebar-content">
                 {/* MAIN CATEGORIES */}       {" "}
+
         {categories.map((category) => (
           <button
             key={category.id}
@@ -220,6 +221,7 @@ const VideoSidebar = ({ activeCategory, onCategoryChange, onCollapse }) => {
           <button key={item.id} className="sidebar-item">
                         <item.icon size={22} />           {" "}
             {!collapsed && <span>{item.label}</span>}         {" "}
+
           </button>
         ))}
              {" "}

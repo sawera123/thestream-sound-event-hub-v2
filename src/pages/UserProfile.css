@@ -34,7 +34,7 @@
   position: absolute;
   bottom: 10px;
   right: 20px;
-  background: #3ea6ff;
+  background: #ff0000;
   padding: 6px 14px;
   border-radius: 6px;
   cursor: pointer;
@@ -84,10 +84,10 @@
 }
 
 .profile-upload-btn {
-  background-color: #fff;
-  color: #000;
+  background-color: #ffffff56;
+  color: #ffffff;
   font-weight: 600;
-  border: 2px solid #ff0000;
+  
   padding: 6px 12px;
   border-radius: 6px;
   cursor: pointer;

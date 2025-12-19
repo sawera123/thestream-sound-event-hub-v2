@@ -29,6 +29,7 @@ const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const userMenuRef = useRef(null);
+
   const notifRef = useRef(null); // New
 
   // --- Notification Logic Start ---
@@ -215,7 +216,6 @@ const Navigation = () => {
                 <span className="notif-badge">{unreadCount}</span>
               )}
             </button>
-
             {showNotifications && (
               <div className="notif-dropdown">
                 <div className="notif-header">Notifications</div>
