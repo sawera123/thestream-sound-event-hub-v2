@@ -30,6 +30,7 @@
     /* 💡 FIX: Agar alignment issue ho toh yeh add karein */
     vertical-align: middle;
 }
+
 /* Desktop only */
 @media (min-width: 1024px) {
     .video-sidebar {
@@ -42,6 +43,14 @@
     .video-sidebar {
         display: none;
     }
+}
+
+
+/* Mobile */
+@media (max-width: 1024px) {
+  .video-sidebar {
+    display: none;
+  }
 }
 
 /* ------------------------------
@@ -87,6 +96,7 @@
     overflow: hidden;
     /*margin: 0; /* No extra margin */
 }
+
 
 .sidebar-item:hover {
     background: #272727; /* YT hover */
