@@ -1,3 +1,4 @@
+import Hls from "hls.js";
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
@@ -40,7 +41,6 @@ const CommentItem = ({ comment, currentUser, videoId, refreshComments }) => {
   const [likes, setLikes] = useState(0);
   const [dislikes, setDislikes] = useState(0);
   const [userStatus, setUserStatus] = useState(null);
-
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [showReplies, setShowReplies] = useState(false);
@@ -308,6 +308,16 @@ const VideoPlayer = () => {
   const { id } = useParams();
   const videoId = parseInt(id, 10);
   const videoRef = useRef(null);
+  const hlsInstance = useRef(null);
+  const [isCheckingReport, setIsCheckingReport] = useState(true);
+  const [isProcessingReport, setIsProcessingReport] = useState(false);
+  const [isProcessingWatchLater, setIsProcessingWatchLater] = useState(false);
+  const [isClipping, setIsClipping] = useState(false);
+  const [clipStart, setClipStart] = useState(0);
+  const [clipEnd, setClipEnd] = useState(0);
+  const [clipUrl, setClipUrl] = useState(null);
+
+  const [isSyncing, setIsSyncing] = useState(false);
   const [video, setVideo] = useState(null);
   const [comments, setComments] = useState([]);
   const [recommendedVideos, setRecommendedVideos] = useState([]);
@@ -327,6 +337,163 @@ const VideoPlayer = () => {
     userId: null,
   });
   const [notify, setNotify] = useState(false);
+  const [isWatchLater, setIsWatchLater] = useState(false);
+  const [hasReported, setHasReported] = useState(false);
+
+  useEffect(() => {
+    if (!currentUserInfo.userId) return;
+
+    const checkReported = async () => {
+      setIsCheckingReport(true);
+      try {
+        const { data } = await supabase
+          .from("video_reports")
+          .select("id")
+          .eq("user_id", currentUserInfo.userId)
+          .eq("video_id", videoId)
+          .maybeSingle();
+
+        setHasReported(!!data);
+      } catch (err) {
+        console.error("Check report error:", err.message);
+      } finally {
+        setIsCheckingReport(false);
+      }
+    };
+
+    checkReported();
+  }, [currentUserInfo.userId, videoId]);
+
+  // ==========================================
+  // 1. ARCHIVE LOGIC
+  // ==========================================
+  // --- Update Archive URL without page reload ---
+  const updateVideoToArchive = async (recordingUrl) => {
+    console.log("Updating Supabase to Archive category...");
+    const { error } = await supabase
+      .from("videos")
+      .update({
+        video_url: recordingUrl,
+        category: "Archive",
+        stream_status: "finished",
+      })
+      .eq("id", videoId);
+
+    if (!error) {
+      // Update video state directly instead of reloading
+      setVideo((prev) => ({
+        ...prev,
+        category: "Archive",
+        videoUrl: recordingUrl,
+        stream_status: "finished",
+      }));
+      setIsSyncing(false);
+      alert("Stream archived successfully! ✅");
+    }
+  };
+
+  // --- Fetch Recording with safe retry ---
+  const fetchRecording = async (streamId) => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+
+    try {
+      const { data: sessions, error } = await supabase.functions.invoke(
+        "fetch-recording",
+        { body: { streamId } },
+      );
+
+      if (error) throw error;
+
+      const rawString = JSON.stringify(sessions);
+      const match =
+        rawString.match(
+          /"(https:\/\/[^"]+lp-playback\.studio[^"]+\.mp4[^"]*)"/i,
+        ) ||
+        rawString.match(
+          /"(https:\/\/[^"]+vod-cdn\.lp-playback\.studio[^"]+)"/i,
+        );
+
+      if (match && match[1]) {
+        const detectedUrl = match[1].replace(/\\/g, "");
+        await updateVideoToArchive(detectedUrl);
+      } else {
+        console.log("Archive not ready yet, will check again automatically...");
+      }
+    } catch (err) {
+      console.error("Invoke Error:", err.message);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Auto-sync Live → Archive
+  useEffect(() => {
+    if (!video || video.category !== "Live" || !video.stream_id) return;
+
+    let interval;
+
+    const autoSync = async () => {
+      if (isSyncing) return; // prevent multiple fetches
+      await fetchRecording(video.stream_id);
+    };
+
+    // Check every 10s
+    interval = setInterval(autoSync, 10000);
+
+    return () => clearInterval(interval); // cleanup
+  }, [video, isSyncing]);
+
+  // ==========================================
+  // 2. MAIN PLAYER LOGIC
+  // ==========================================
+  useEffect(() => {
+    if (!video || !videoRef.current) return;
+
+    if (hlsInstance.current) {
+      hlsInstance.current.destroy();
+      hlsInstance.current = null;
+    }
+
+    const setupPlayer = async () => {
+      let videoSrc = "";
+      let isLive = video.category === "Live";
+
+      if (isLive) {
+        videoSrc = `https://livepeercdn.studio/hls/${video.video_url}/index.m3u8`;
+      } else {
+        videoSrc = video.videoUrl; // Archived video
+      }
+
+      if (Hls.isSupported() && isLive) {
+        const hls = new Hls({ manifestLoadingMaxRetry: 10 });
+        hlsInstance.current = hls;
+        hls.loadSource(videoSrc);
+        hls.attachMedia(videoRef.current);
+
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          if (data.fatal && data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            console.log("Stream offline detected.");
+            if (video.stream_id && !isSyncing) {
+              setTimeout(() => fetchRecording(video.stream_id), 5000);
+            }
+          }
+        });
+      } else {
+        videoRef.current.src = videoSrc;
+        videoRef.current.controls = true;
+      }
+
+      videoRef.current.muted = true;
+      videoRef.current.play().catch(() => console.log("Autoplay blocked."));
+    };
+
+    setupPlayer();
+
+    return () => {
+      if (hlsInstance.current) hlsInstance.current.destroy();
+    };
+  }, [video]);
 
   // Load User
   useEffect(() => {
@@ -357,8 +524,13 @@ const VideoPlayer = () => {
         .eq("id", videoId)
         .single();
       if (vid) {
-        const vUrl = supabase.storage.from("video").getPublicUrl(vid.video_url)
-          .data.publicUrl;
+        let vUrl = "";
+        if (vid.category !== "Live") {
+          vUrl = supabase.storage.from("video").getPublicUrl(vid.video_url)
+            .data.publicUrl;
+        } else {
+          vUrl = vid.video_url; // LivePeer playback_id stored here (e.g. c778qtp3g3ttcg9m)
+        }
         let tUrl = "/default-thumbnail.jpg";
         if (vid.thumbnail_url) {
           tUrl = vid.thumbnail_url.startsWith("http")
@@ -419,21 +591,41 @@ const VideoPlayer = () => {
           setLiked(ur?.is_like ?? null);
         }
 
-        await supabase
-          .from("video_views")
-          .upsert(
-            {
+        if (currentUserInfo.userId) {
+          const { data: wl } = await supabase
+            .from("watch_later")
+            .select("id")
+            .eq("user_id", currentUserInfo.userId)
+            .eq("video_id", videoId)
+            .maybeSingle();
+
+          setIsWatchLater(!!wl);
+        }
+
+        if (currentUserInfo.userId) {
+          const { data: existingView } = await supabase
+            .from("video_views")
+            .select("id")
+            .eq("video_id", videoId)
+            .eq("user_id", currentUserInfo.userId)
+            .maybeSingle();
+
+          if (!existingView) {
+            // 🔥 Insert ONLY if not viewed before
+            await supabase.from("video_views").insert({
               video_id: videoId,
               user_id: currentUserInfo.userId,
               last_watched: new Date().toISOString(),
-            },
-            { onConflict: ["user_id", "video_id"] },
-          );
-        const { data: vdata } = await supabase
+            });
+          }
+        }
+
+        const { count } = await supabase
           .from("video_views")
-          .select("id")
+          .select("*", { count: "exact", head: true })
           .eq("video_id", videoId);
-        setTotalViews(vdata?.length || 0);
+
+        setTotalViews(count || 0);
       }
 
       loadComments();
@@ -495,18 +687,15 @@ const VideoPlayer = () => {
 
   const addRootComment = async () => {
     if (!commentText.trim() || !currentUserInfo.userId) return;
-    await supabase
-      .from("video_comments")
-      .insert({
-        video_id: videoId,
-        user_id: currentUserInfo.userId,
-        comment: commentText,
-      });
+    await supabase.from("video_comments").insert({
+      video_id: videoId,
+      user_id: currentUserInfo.userId,
+      comment: commentText,
+    });
     setCommentText("");
     loadComments();
   };
 
-  // --- ACTIONS (FIXED TOGGLE LOGIC) ---
   // --- ACTIONS (FIXED TOGGLE LOGIC) ---
   const toggleReaction = async (reaction) => {
     if (!currentUserInfo?.userId) return alert("Please login!");
@@ -565,30 +754,132 @@ const VideoPlayer = () => {
         .eq("user_id", currentUserInfo.userId)
         .eq("channel_id", video.uploaded_by);
     else
-      await supabase
-        .from("channel_subscriptions")
-        .upsert({
-          user_id: currentUserInfo.userId,
-          channel_id: video.uploaded_by,
-          notify: false,
-        });
+      await supabase.from("channel_subscriptions").upsert({
+        user_id: currentUserInfo.userId,
+        channel_id: video.uploaded_by,
+        notify: false,
+      });
     setSubscribed(!subscribed);
     setSubscriberCount((prev) => (subscribed ? prev - 1 : prev + 1));
   };
 
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    alert("Link copied!");
+  const handleShare = async () => {
+    if (navigator.share) {
+      await navigator.share({
+        title: video.title,
+        url: window.location.href,
+      });
+    } else {
+      await navigator.clipboard.writeText(window.location.href);
+      alert("Link copied!");
+    }
   };
+
+  const handleDownload = () => {
+    const link = document.createElement("a");
+    link.href = video.videoUrl;
+    link.download = video.title || "video";
+    link.click();
+  };
+
   const handleClip = () => {
-    alert("Clip feature coming soon!");
+    if (!currentUserInfo.userId) {
+      alert("Please login to create clips!");
+      return;
+    }
+
+    if (!videoRef.current) return;
+
+    const currentTime = Math.floor(videoRef.current.currentTime);
+
+    if (!isClipping) {
+      // Start clipping
+      setClipStart(currentTime);
+      setIsClipping(true);
+      alert(`Clip started at ${clipStart}s. Click Clip again to set end.`);
+    } else {
+      // End clipping
+      setClipEnd(currentTime);
+      setIsClipping(false);
+
+      // For frontend-only demo, we create a URL with start/end query
+      const url = `${window.location.href}?clipStart=${clipStart}&clipEnd=${currentTime}`;
+      setClipUrl(url);
+
+      alert(`Clip created! Share this link: ${url}`);
+    }
   };
-  const handleSave = () => {
-    alert("Saved to playlist!");
+
+  const handleSave = async () => {
+    if (!currentUserInfo.userId) {
+      alert("Please login to use Watch Later");
+      return;
+    }
+
+    // Optimistic UI
+    setIsWatchLater((prev) => !prev);
+
+    try {
+      if (isWatchLater) {
+        // REMOVE
+        const { error } = await supabase
+          .from("watch_later")
+          .delete()
+          .eq("user_id", currentUserInfo.userId)
+          .eq("video_id", videoId);
+
+        if (error) throw error;
+
+        alert("Removed from Watch Later");
+      } else {
+        // ADD
+        const { error } = await supabase.from("watch_later").insert({
+          user_id: currentUserInfo.userId,
+          video_id: videoId,
+        });
+
+        if (error) throw error;
+
+        alert("Added to Watch Later");
+      }
+    } catch (err) {
+      console.error("Watch Later Error:", err.message);
+      // Rollback UI
+      setIsWatchLater((prev) => !prev);
+      alert("Something went wrong. Please try again.");
+    }
   };
-  const handleReportVideo = () => {
-    alert("Video Reported.");
+
+  const handleReportVideo = async () => {
+    if (!currentUserInfo.userId) {
+      alert("Please login to report videos");
+      return;
+    }
+
+    if (isProcessingReport || hasReported) return; // prevent double-click
+    const reason = window.prompt("Why are you reporting this video?");
+    if (!reason || !reason.trim()) return;
+
+    try {
+      setIsProcessingReport(true);
+      const { error } = await supabase.from("video_reports").insert({
+        user_id: currentUserInfo.userId,
+        video_id: videoId,
+        reason: reason.trim(),
+      });
+
+      if (error) throw error;
+
+      setHasReported(true);
+      alert("Video reported successfully ✅");
+    } catch (err) {
+      console.error("Report Video Error:", err.message);
+      alert("Error reporting video.");
+    } finally {
+      setIsProcessingReport(false);
+    }
   };
+
   const toggleNotify = async () => {
     if (!currentUserInfo.userId || !video?.uploaded_by) return;
 
@@ -619,15 +910,29 @@ const VideoPlayer = () => {
     <div className="youtube-page">
       <div className="youtube-main-content">
         <div className="youtube-video-wrapper">
-          <video
-            ref={videoRef}
-            key={videoId}
-            className="youtube-video-element"
-            controls
-            poster={video.thumbUrl}
-          >
-            <source src={video.videoUrl} type="video/mp4" />
-          </video>
+          {video.category === "Live" ? (
+            /* 🔴 Live Stream Player using HLS.js */
+            <video
+              ref={videoRef}
+              key={`live-${videoId}`}
+              className="youtube-video-element"
+              controls
+              autoPlay
+              muted // Autoplay aksar muted mangta hai browsers mein
+              playsInline
+            />
+          ) : (
+            /* 📹 Normal Video Player */
+            <video
+              ref={videoRef}
+              key={videoId}
+              className="youtube-video-element"
+              controls
+              poster={video.thumbUrl}
+            >
+              <source src={video.videoUrl} type="video/mp4" />
+            </video>
+          )}
         </div>
 
         <div className="youtube-video-info">
@@ -681,23 +986,46 @@ const VideoPlayer = () => {
               <button className="tool-btn pill-btn" onClick={handleShare}>
                 <Share2 size={18} /> Share
               </button>
-              <button
-                className="tool-btn pill-btn"
-                onClick={() => {
-                  /* Download logic */
-                }}
-              >
+              <button className="tool-btn pill-btn" onClick={handleDownload}>
                 <Download size={18} /> Download
               </button>
-              <button className="tool-btn pill-btn" onClick={handleClip}>
-                <Scissors size={18} /> Clip
+              <button
+                className={`tool-btn pill-btn ${isClipping ? "active" : ""}`}
+                onClick={handleClip}
+              >
+                <Scissors size={18} />
+                {isClipping ? "Select End" : "Clip"}
               </button>
-              <button className="tool-btn pill-btn" onClick={handleSave}>
-                <PlusSquare size={18} /> Save
+
+              {clipUrl && (
+                <div className="clip-link">
+                  <input
+                    type="text"
+                    value={clipUrl}
+                    readOnly
+                    onClick={(e) => e.target.select()}
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(clipUrl);
+                      alert("Clip link copied!");
+                    }}
+                  >
+                    Copy
+                  </button>
+                </div>
+              )}
+              <button
+                className={`tool-btn pill-btn ${isWatchLater ? "active" : ""}`}
+                onClick={handleSave}
+              >
+                <PlusSquare size={18} />
+                {isWatchLater ? "Saved" : "Watch Later"}
               </button>
               <button
-                className="tool-btn circle-btn"
+                className={`tool-btn circle-btn ${hasReported ? "reported" : ""}`}
                 onClick={handleReportVideo}
+                disabled={hasReported || isCheckingReport || isProcessingReport}
               >
                 <Flag size={18} />
               </button>

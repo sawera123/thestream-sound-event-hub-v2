@@ -122,6 +122,7 @@ const MusicCard = ({ track, onPlay, onPurchase, isOwned = false }) => {
         <button className="play-overlay" onClick={handlePlayClick}>
           <Play size={32} fill="white" />
         </button>
+
         {/* If Owned, show Checkmark, else show Price */}
         <div className={`track-price ${isOwned ? "owned-badge" : ""}`}>
           {isOwned ? <Check size={14} /> : `$${track.price}`}

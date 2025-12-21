@@ -13,9 +13,9 @@ const Videos = () => {
   const [showManualAddModal, setShowManualAddModal] = useState(false);
   const [videoLinkToAdd, setVideoLinkToAdd] = useState("");
   const [manualAddError, setManualAddError] = useState(null);
-
-  const [streamKey, setStreamKey] = useState(null); // Mux ka RTMP URL har stream ke liye same hota hai (replace 'live.mux.com')
-  const [rtmpUrl, setRtmpUrl] = useState("rtmp://global-live.mux.com/app");
+  const [activeStreamId, setActiveStreamId] = useState(null); // Nayi state
+  const [streamKey, setStreamKey] = useState(null);
+  const [rtmpUrl, setRtmpUrl] = useState("rtmp://rtmp.livepeer.studio/live");
   const [playbackId, setPlaybackId] = useState(null);
 
   const [videoFile, setVideoFile] = useState(null);
@@ -195,25 +195,25 @@ const Videos = () => {
     }
   }, [activeCategory, currentUserInfo.userId]);
 
-  useEffect(() => {
-    // Sirf tab sort karein jab user trending category mein ho ya videos update hui hon
-    if (videos.length > 0) {
-      setTrendingLoading(true);
+  const fetchTrendingVideos = async () => {
+    setTrendingLoading(true);
 
-      // 1. Approved videos ko filter karein
-      const approvedVideos = videos.filter((v) => v.approved);
+    const { data, error } = await supabase.rpc("get_trending_videos");
 
-      // 2. Videos ki copy bana kar views ke adhaar par descending order mein sort karein
-      const sorted = [...approvedVideos].sort(
-        (a, b) => (b.view_count || 0) - (a.view_count || 0),
-      );
-
-      setTrendingVideos(sorted);
-      setTrendingLoading(false);
-    } else if (videos.length === 0) {
-      setTrendingVideos([]);
+    if (!error && data) {
+      setTrendingVideos(data);
+    } else if (error) {
+      console.error("Trending fetch error:", error);
     }
-  }, [videos]);
+
+    setTrendingLoading(false);
+  };
+
+  useEffect(() => {
+    if (activeCategory === "trending") {
+      fetchTrendingVideos();
+    }
+  }, [activeCategory]);
 
   const filteredVideos =
     activeCategory === "all"
@@ -268,7 +268,7 @@ const Videos = () => {
         const canvas = document.createElement("canvas");
         canvas.width = 320;
         canvas.height = 180;
-        const ctx = canvas.getContext("2d");
+        const ctx = canvas.Context("2d");
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         canvas.toBlob(
           (blob) => {
@@ -448,34 +448,42 @@ const Videos = () => {
       alert("Please log in to start a stream.");
       return;
     }
+
     setCategory("Live");
     setUploading(true);
-    setTitle(""); // Ensure title is cleared/available for live stream metadata
+    setTitle("");
 
     try {
-      // Naye Edge Function ko call karein. Title bhi bhejte hain.
       const { data, error } = await supabase.functions.invoke(
-        "create-mux-live-stream",
+        "create-mux-live-stream", // Edge function ka naam same hai
         {
           body: {
-            user_id: currentUserInfo.userId,
-            title: title || "Untitled Live Stream",
+            userId: currentUserInfo.userId,
+            title: title || "My Live Stream",
           },
         },
       );
 
       if (error) throw error;
-
-      // Key aur Playback ID dono save karein
+      console.log("LivePeer Full Response:", data);
+      console.log("LivePeer Stream ID (data.id):", data.id);
+      // ✅ LivePeer ke mutabiq state update karein
       setStreamKey(data.stream_key);
-      setPlaybackId(data.playback_id); // Playback ID viewers ke liye zaroori hai
-      // RTMP URL Mux ke server ka hota hai, jo hamesha 'rtmp://global-live.mux.com/app' hota hai,
-      // ya hum Mux se received data.rtmp_url bhi use kar sakte hain
-      setRtmpUrl(data.rtmp_url);
+      setPlaybackId(data.playback_id);
+      setActiveStreamId(data.id);
+
+      // ✅ LivePeer ka RTMP URL
+      const livepeerRtmpUrl = "rtmp://rtmp.livepeer.studio/live";
+      setRtmpUrl(livepeerRtmpUrl);
+
       setShowUploadModal(true);
+
+      alert(
+        `Live Stream Ready!\n\nServer: ${livepeerRtmpUrl}\nStream Key: ${data.stream_key}\n\nCopy these to OBS Studio.`,
+      );
     } catch (err) {
-      console.error("Mux Creation Error:", err);
-      alert("Failed to create Mux stream. Check Edge Function logs.");
+      console.error("Stream Creation Error:", err);
+      alert("Failed to create stream. Check your LivePeer API Key in Secrets.");
     } finally {
       setUploading(false);
     }
@@ -519,7 +527,7 @@ const Videos = () => {
       // =======================================================
       if (category === "Live") {
         if (!streamKey || !playbackId)
-          throw new Error("Mux assets not created. Try again."); // Playback ID check
+          throw new Error("LivePeer assets not created. Try again.");
 
         const { data, error } = await supabase
           .from("videos")
@@ -527,12 +535,14 @@ const Videos = () => {
             title,
             description,
             category: "Live",
-            video_url: playbackId, // Playback ID ko video_url mein store karein
-            thumbnail_url: "videos_thumbnail/live_placeholder.png",
+            video_url: playbackId,
+            stream_id: activeStreamId,
+            thumbnail_url: "videos_thumbnail/live_placeholder.png", // Live ke liye placeholder
             uploaded_by: user.id,
             uploader_ip: userIp,
-            status: "approved",
-            stream_status: "waiting", // Initial status 'waiting' hona chahiye
+            status: "approved", // Direct approve karne ke liye
+            approved: true, // Taake fetchVideos() mein fauran nazar aaye
+            stream_status: "active",
           })
           .select()
           .single();
@@ -540,9 +550,7 @@ const Videos = () => {
         if (error) throw error;
         insertedRecord = data;
 
-        alert(
-          `Stream entry created! Now start your OBS stream using the key: ${streamKey}`,
-        );
+        alert(`Stream created! Now go to your Home page, it's already there!`);
 
         // =======================================================
         // B) NORMAL VIDEO UPLOAD LOGIC
@@ -725,22 +733,33 @@ const Videos = () => {
         </div>
 
         <div className="videos-grid">
-          {filteredVideos.map((video) => (
-            <VideoCard
-              key={video.id}
-              video={{
-                ...video,
-                videoUrl: supabase.storage
-                  .from("video")
-                  .getPublicUrl(video.video_url).data.publicUrl,
-                thumbnailUrl: video.thumbnail_url
-                  ? supabase.storage
-                      .from("thumbnails")
-                      .getPublicUrl(video.thumbnail_url).data.publicUrl
-                  : "/default-thumbnail.jpg",
-              }}
-            />
-          ))}
+          {filteredVideos.map((video) => {
+            // 🔍 Check if it's a Live video
+            const finalVideoUrl =
+              video.category === "Live"
+                ? `https://livepeercdn.studio/hls/${video.video_url}/index.m3u8` // Live URL
+                : supabase.storage.from("video").getPublicUrl(video.video_url)
+                    .data.publicUrl; // Normal URL
+
+            const finalThumbnailUrl = video.thumbnail_url?.startsWith("http")
+              ? video.thumbnail_url
+              : video.thumbnail_url
+                ? supabase.storage
+                    .from("thumbnails")
+                    .getPublicUrl(video.thumbnail_url).data.publicUrl
+                : "/default-thumbnail.jpg";
+
+            return (
+              <VideoCard
+                key={video.id}
+                video={{
+                  ...video,
+                  videoUrl: finalVideoUrl,
+                  thumbnailUrl: finalThumbnailUrl,
+                }}
+              />
+            );
+          })}
         </div>
 
         {showUploadModal && (
