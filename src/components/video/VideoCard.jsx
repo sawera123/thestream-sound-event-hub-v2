@@ -24,7 +24,7 @@ const VideoCard = ({
           className="video-thumbnail"
         />
 
-        {/* 🔴 LIVE Badge: Isay hamesha Top-Left (Left: 10px) par rakhein */}
+        {/* LIVE Badge: Isay hamesha Top-Left (Left: 10px) par rakhein */}
         {video.category === "Live" && (
           <span
             style={{
@@ -47,7 +47,7 @@ const VideoCard = ({
           </span>
         )}
 
-        {/* 🔘 Buttons Group: Isay Top-Right (Right: 8px) par ek column mein rakhein */}
+        {/* Buttons Group: Isay Top-Right (Right: 8px) par ek column mein rakhein */}
         <div
           style={{
             position: "absolute",
