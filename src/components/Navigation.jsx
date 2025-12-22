@@ -199,7 +199,7 @@ const Navigation = () => {
 
           <div className="nav-actions">
             <Link to="/subscription" className="upgrade-btn">
-              <Zap size={18} fill="currentColor" />
+              <Zap size={12} fill="currentColor" />
               <span>Upgrade</span>
             </Link>
 
