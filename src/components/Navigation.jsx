@@ -14,6 +14,7 @@ import {
   LogOut,
   Clock,
 } from "lucide-react";
+// import logo from "././../../public/assets/logo.jpeg";
 import "./Navigation.css";
 import { supabase } from "../lib/supabase";
 
@@ -165,7 +166,7 @@ const Navigation = () => {
       <div className="nav-container">
         <Link to="/" className="nav-logo">
           <div className="logo-icon">
-            <Video className="logo-video" />
+           <img src="/assets/logo.jpeg" alt="logo" className="logo-image" />
           </div>
           <span className="logo-text">StreamHub</span>
         </Link>

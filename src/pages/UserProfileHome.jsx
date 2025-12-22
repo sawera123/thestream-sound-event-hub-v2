@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import VideoCard from '../components/video/VideoCard';
 import MusicCard from '../components/music/MusicCard';
+import MusicPlayer from '../components/music/MusicPlayer';
 import './UserProfile.css'; // Ensure styling is there
 
 export const UserProfileHome = ({ userId }) => {
   const [videos, setVideos] = useState([]);
   const [musicTracks, setMusicTracks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentTrack, setCurrentTrack] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -69,10 +71,14 @@ export const UserProfileHome = ({ userId }) => {
         </h3>
         
         {videos.length > 0 ? (
-          <div className="profile-videos-grid">
+          <div className="container-fluid px-0">
+            <div className='row g-4'>
             {videos.map(video => (
+            <div className ="col-12 col-sm-6 col-md-4 col-lg-3">
               <VideoCard key={video.id} video={video} />
+                </div>
             ))}
+          </div>
           </div>
         ) : (
           <p className="text-gray-500">No videos uploaded yet.</p>
@@ -91,7 +97,7 @@ export const UserProfileHome = ({ userId }) => {
               <MusicCard 
                 key={track.id} 
                 track={track} 
-                onPlay={() => console.log('Play', track.title)} 
+                onPlay={() => setCurrentTrack(track)} 
                 onPurchase={() => {}} // Disabled on profile
               />
             ))}
@@ -100,6 +106,22 @@ export const UserProfileHome = ({ userId }) => {
           <p className="text-gray-500">No music released yet.</p>
         )}
       </div>
+        {currentTrack && (
+      <MusicPlayer 
+        currentTrack={currentTrack} 
+        onNext={() => {
+          const index = musicTracks.findIndex(t => t.id === currentTrack.id);
+          const nextTrack = musicTracks[index + 1] || musicTracks[0];
+          setCurrentTrack(nextTrack);
+        }}
+        onPrev={() => {
+          const index = musicTracks.findIndex(t => t.id === currentTrack.id);
+          const prevTrack = musicTracks[index - 1] || musicTracks[musicTracks.length - 1];
+          setCurrentTrack(prevTrack);
+        }}
+        onClose={() => setCurrentTrack(null)}
+      />
+    )}
 
     </div>
   );

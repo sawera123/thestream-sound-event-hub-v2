@@ -4,7 +4,6 @@ import { supabase } from "../../lib/supabase"; // <-- Supabase import hua
 import {
   Home,
   TrendingUp,
-  Music,
   Gamepad,
   Radio,
   Clock,
@@ -78,9 +77,9 @@ const VideoSidebar = ({ activeCategory, onCategoryChange, onCollapse }) => {
         .from("channel_subscriptions")
         .select(
           `
-          channel_id,
-          profiles!channel_subscriptions_channel_id_fkey (full_name, avatar_url)
-        `,
+  channel_id,
+  profiles!channel_subscriptions_channel_id_fkey (full_name, avatar_url)
+  `,
         )
         .eq("user_id", userId);
       if (!subError && subs) {
@@ -124,8 +123,8 @@ const VideoSidebar = ({ activeCategory, onCategoryChange, onCollapse }) => {
 
   const categories = [
     { id: "all", icon: Home, label: "Home" },
-    { id: "trending", icon: TrendingUp, label: "Trending" },
-    { id: "music", icon: Music, label: "Music" },
+    { id: "trending", icon: TrendingUp, label: "Most Watched" },
+    // { id: "music", icon: Music, label: "Music" },
     { id: "live", icon: Radio, label: "Live" },
     { id: "history", icon: Clock, label: `History (${historyCount})` },
     {
@@ -136,13 +135,13 @@ const VideoSidebar = ({ activeCategory, onCategoryChange, onCollapse }) => {
     { id: "liked", icon: ThumbsUp, label: `Liked Videos (${likedCount})` },
   ];
 
-  const bottomItems = [
-    { id: "settings", icon: Settings, label: "Settings" },
-    { id: "help", icon: HelpCircle, label: "Help" },
-  ];
+  // const bottomItems = [
+  //   { id: "settings", icon: Settings, label: "Settings" },
+  //   { id: "help", icon: HelpCircle, label: "Help" },
+  // ];
   return (
     <aside className={`video-sidebar ${collapsed ? "collapsed" : ""}`}>
-            {/* Collapse Button */}      {/* Collapse Button */}
+      {/* Collapse Button */}  {/* Collapse Button */}
       <button className="collapse-btn" onClick={toggleCollapse}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -159,9 +158,9 @@ const VideoSidebar = ({ activeCategory, onCategoryChange, onCollapse }) => {
           <path d="M20 5H4a1 1 0 000 2h16a1 1 0 100-2Zm0 6H4a1 1 0 000 2h16a1 1 0 000-2Zm0 6H4a1 1 0 000 2h16a1 1 0 000-2Z"></path>
         </svg>
       </button>
-           {" "}
+     
       <div className="sidebar-content">
-                {/* MAIN CATEGORIES */}       {" "}
+        {/* MAIN CATEGORIES */}
 
         {categories.map((category) => (
           <button
@@ -169,20 +168,20 @@ const VideoSidebar = ({ activeCategory, onCategoryChange, onCollapse }) => {
             className={`sidebar-item ${activeCategory === category.id ? "active" : ""}`}
             onClick={() => onCategoryChange(category.id)}
           >
-                        <category.icon size={22} />           {" "}
-            {!collapsed && <span>{category.label}</span>}         {" "}
+            <category.icon size={22} />
+            {!collapsed && <span>{category.label}</span>}
           </button>
         ))}
-                <hr />       {" "}
-        {/* SUBSCRIPTIONS SECTION (Show only if user is logged in) */}       {" "}
+        <hr />
+        {/* SUBSCRIPTIONS SECTION (Show only if user is logged in) */} 
         {currentUser && (
           <>
-                       {" "}
+         
             <div className="section-title">
-                            {!collapsed && <span>Subscriptions</span>}         
-               {" "}
+              {!collapsed && <span>Subscriptions</span>} 
+             
             </div>
-                       {" "}
+           
             {loading ? (
               <p className="loading-text">{!collapsed && "Loading..."}</p>
             ) : subscriptions.length > 0 ? (
@@ -197,15 +196,15 @@ const VideoSidebar = ({ activeCategory, onCategoryChange, onCollapse }) => {
                     )
                   }
                 >
-                                    {/* Avatar URL display karein */}           
-                       {" "}
+                  {/* Avatar URL display karein */} 
+                 
                   <img
                     src={sub.avatarUrl}
                     alt={sub.name}
                     className="subscription-avatar"
                   />
-                                    {!collapsed && <span>{sub.name}</span>}     
-                           {" "}
+                  {!collapsed && <span>{sub.name}</span>}
+                 
                 </button>
               ))
             ) : (
@@ -213,20 +212,20 @@ const VideoSidebar = ({ activeCategory, onCategoryChange, onCollapse }) => {
                 {!collapsed && "No subscriptions yet"}
               </p>
             )}
-                        <hr />         {" "}
+            <hr /> 
           </>
         )}
-                        {/* SETTINGS & HELP */}       {" "}
-        {bottomItems.map((item) => (
+        {/* SETTINGS & HELP */} 
+        {/* {bottomItems.map((item) => (
           <button key={item.id} className="sidebar-item">
-                        <item.icon size={22} />           {" "}
-            {!collapsed && <span>{item.label}</span>}         {" "}
+            <item.icon size={22} /> 
+            {!collapsed && <span>{item.label}</span>} 
 
           </button>
-        ))}
-             {" "}
+        ))} */}
+       
       </div>
-         {" "}
+     
     </aside>
   );
 };

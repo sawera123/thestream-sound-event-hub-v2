@@ -512,3 +512,17 @@
     font-size: 1.8rem;
   }
 }
+.hero-section {
+  position: relative;
+  overflow: hidden;
+  padding: 5rem 1rem;
+  background: url('/assets/logo.jpeg') center/contain no-repeat;
+}
+
+.hero-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0,0,0,0.7); /* adjust 0.1 - 0.7 for opacity */
+  z-index: 1;
+}
+

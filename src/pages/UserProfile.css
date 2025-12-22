@@ -252,3 +252,11 @@
 .video-buttons button svg {
   pointer-events: none; /* prevents icon from blocking click */
 }
+.video-thumbnail {
+  width: 100%;
+  height: auto;         
+  max-height: 250px;     
+  object-fit: contain;  
+  background: #000;    
+  border-radius: 8px;
+}

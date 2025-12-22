@@ -50,7 +50,7 @@ React.useEffect(() => {
     <div className="home-page">
       {/* Hero Section */}
       <section className="hero-section">
-        
+         <div className="hero-bg-overlay"></div>
         <div className="hero-content animate-slide-in">
           <div className="hero-badge">
             <Sparkles size={16} />

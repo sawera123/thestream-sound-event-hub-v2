@@ -6,7 +6,7 @@
     z-index: 50;
     box-shadow: var(--shadow-card);
     backdrop-filter: blur(20px);
-    background: rgba(20, 20, 20, 0.95);
+    background: black;
 }
 
 .nav-container {
@@ -33,18 +33,19 @@
 }
 
 .logo-icon {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 0.75rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #dc2626, #f87171);
-    box-shadow: var(--shadow-glow);
+  width: 100%;
+  height: 40px;
+  
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.logo-video {
-    color: white;
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; 
 }
 
 .logo-text {
