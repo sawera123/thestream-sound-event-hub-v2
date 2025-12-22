@@ -522,7 +522,7 @@
 .hero-bg-overlay {
   position: absolute;
   inset: 0;
-  background-color: rgba(0,0,0,0.7); /* adjust 0.1 - 0.7 for opacity */
+  background-color: rgba(0,0,0,0.8); /* adjust 0.1 - 0.7 for opacity */
   z-index: 1;
 }
 
