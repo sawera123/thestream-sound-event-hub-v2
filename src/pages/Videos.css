@@ -251,7 +251,7 @@
 /* SIDEBAR BASE */
 .video-sidebar {
   position: fixed;
-  top: 64px; /* adjust header height */
+  top: 70px; /* adjust header height */
   left: 0;
   width: 240px;
   height: calc(100vh - 64px);
