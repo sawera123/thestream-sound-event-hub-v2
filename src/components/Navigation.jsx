@@ -9,29 +9,26 @@ import {
   X,
   Search,
   Bell,
-  User,
   Zap,
   LogOut,
   Clock,
 } from "lucide-react";
-// import logo from "././../../public/assets/logo.jpeg";
 import "./Navigation.css";
 import { supabase } from "../lib/supabase";
 
 const Navigation = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false); // New
-  const [notifications, setNotifications] = useState([]); // New
-  const [unreadCount, setUnreadCount] = useState(0); // New
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [user, setUser] = useState({ name: "Guest", email: "", id: null });
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
   const userMenuRef = useRef(null);
-
-  const notifRef = useRef(null); // New
+  const notifRef = useRef(null);
 
   // --- Notification Logic Start ---
   useEffect(() => {
@@ -64,7 +61,7 @@ const Navigation = () => {
         (payload) => {
           setNotifications((prev) => [payload.new, ...prev]);
           setUnreadCount((prev) => prev + 1);
-        },
+        }
       )
       .subscribe();
 
@@ -73,7 +70,7 @@ const Navigation = () => {
 
   const markAsRead = async () => {
     if (unreadCount === 0) return;
-    setUnreadCount(0); // Optimistic UI update
+    setUnreadCount(0);
     await supabase
       .from("notifications")
       .update({ is_read: true })
@@ -104,7 +101,7 @@ const Navigation = () => {
         });
         setIsAdmin(
           profile?.role === "admin" ||
-            session.user.email === "admin@example.com",
+            session.user.email === "admin@example.com"
         );
       } else {
         setUser({ name: "Guest", email: "", id: null });
@@ -122,7 +119,7 @@ const Navigation = () => {
           setUser({ name: "Guest", email: "", id: null });
           setIsAdmin(false);
         }
-      },
+      }
     );
 
     return () => listener?.subscription.unsubscribe();
@@ -139,6 +136,7 @@ const Navigation = () => {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
@@ -166,7 +164,7 @@ const Navigation = () => {
       <div className="nav-container">
         <Link to="/" className="nav-logo">
           <div className="logo-icon">
-           <img src="/assets/logo.jpeg" alt="logo" className="logo-image" />
+            <img src="/assets/logo.jpeg" alt="logo" className="logo-image" />
           </div>
           <span className="logo-text">StreamHub</span>
         </Link>
@@ -184,135 +182,141 @@ const Navigation = () => {
           </button>
         </form>
 
-        <div className="nav-links">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`nav-link ${isActive(item.path) ? "active" : ""}`}
-            >
-              <item.icon size={20} />
-              <span>{item.label}</span>
-            </Link>
-          ))}
-        </div>
-
-        <div className="nav-actions">
-          <Link to="/subscription" className="upgrade-btn">
-            <Zap size={18} fill="currentColor" />
-            <span>Upgrade</span>
-          </Link>
-
-          {/* 🔔 Notification Container */}
-          <div className="notification-container" ref={notifRef}>
-            <button
-              className="nav-action-btn"
-              onClick={() => {
-                setShowNotifications(!showNotifications);
-                if (!showNotifications) markAsRead();
-              }}
-            >
-              <Bell size={20} />
-              {unreadCount > 0 && (
-                <span className="notif-badge">{unreadCount}</span>
-              )}
-            </button>
-            {showNotifications && (
-              <div className="notif-dropdown">
-                <div className="notif-header">Notifications</div>
-                <div className="notif-list">
-                  {notifications.length > 0 ? (
-                    notifications.map((n) => (
-                      <div
-                        key={n.id}
-                        className={`notif-item ${!n.is_read ? "unread" : ""}`}
-                      >
-                        <p className="notif-msg">{n.message}</p>
-                        <span className="notif-time">
-                          <Clock size={12} style={{ marginRight: "4px" }} />{" "}
-                          {new Date(n.created_at).toLocaleTimeString()}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="notif-empty">No new notifications</div>
-                  )}
-                </div>
-              </div>
-            )}
+        {/* Right side actions */}
+        <div className="nav-right">
+          <div className="nav-links">
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`nav-link ${isActive(item.path) ? "active" : ""}`}
+              >
+                <item.icon size={20} />
+                <span>{item.label}</span>
+              </Link>
+            ))}
           </div>
 
-          <div className="user-menu-wrapper" ref={userMenuRef}>
-            <button
-              className="profile-circle-btn"
-              onClick={() => setShowUserMenu(!showUserMenu)}
-            >
-              {user?.avatar_url ? (
-                <img
-                  src={user.avatar_url}
-                  alt="User"
-                  className="profile-avatar-img"
-                />
-              ) : (
-                user?.name?.charAt(0).toUpperCase()
-              )}
-            </button>
+          <div className="nav-actions">
+            <Link to="/subscription" className="upgrade-btn">
+              <Zap size={18} fill="currentColor" />
+              <span>Upgrade</span>
+            </Link>
 
-            {showUserMenu && (
-              <div className="user-dropdown">
-                <div className="user-info-block">
-                  <div className="user-info-avatar">
-                    {user?.avatar_url ? (
-                      <img
-                        src={user.avatar_url}
-                        alt="User"
-                        className="dropdown-avatar-img"
-                      />
+            {/* Notifications */}
+            <div className="notification-container" ref={notifRef}>
+              <button
+                className="nav-action-btn"
+                onClick={() => {
+                  setShowNotifications(!showNotifications);
+                  if (!showNotifications) markAsRead();
+                }}
+              >
+                <Bell size={20} />
+                {unreadCount > 0 && (
+                  <span className="notif-badge">{unreadCount}</span>
+                )}
+              </button>
+              {showNotifications && (
+                <div className="notif-dropdown">
+                  <div className="notif-header">Notifications</div>
+                  <div className="notif-list">
+                    {notifications.length > 0 ? (
+                      notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          className={`notif-item ${
+                            !n.is_read ? "unread" : ""
+                          }`}
+                        >
+                          <p className="notif-msg">{n.message}</p>
+                          <span className="notif-time">
+                            <Clock size={12} style={{ marginRight: "4px" }} />{" "}
+                            {new Date(n.created_at).toLocaleTimeString()}
+                          </span>
+                        </div>
+                      ))
                     ) : (
-                      user?.name?.charAt(0).toUpperCase()
+                      <div className="notif-empty">No new notifications</div>
                     )}
                   </div>
-                  <div>
-                    <p className="user-info-name">{user?.name}</p>
-                    <p className="user-info-email">{user?.email}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="user-menu-wrapper" ref={userMenuRef}>
+              <button
+                className="profile-circle-btn"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+              >
+                {user?.avatar_url ? (
+                  <img
+                    src={user.avatar_url}
+                    alt="User"
+                    className="profile-avatar-img"
+                  />
+                ) : (
+                  user?.name?.charAt(0).toUpperCase()
+                )}
+              </button>
+
+              {showUserMenu && (
+                <div className="user-dropdown">
+                  <div className="user-info-block">
+                    <div className="user-info-avatar">
+                      {user?.avatar_url ? (
+                        <img
+                          src={user.avatar_url}
+                          alt="User"
+                          className="dropdown-avatar-img"
+                        />
+                      ) : (
+                        user?.name?.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div>
+                      <p className="user-info-name">{user?.name}</p>
+                      <p className="user-info-email">{user?.email}</p>
+                      <Link
+                        to="/profile"
+                        className="view-profile-link"
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        View your channel
+                      </Link>
+                    </div>
+                  </div>
+                  <div className="dropdown-divider"></div>
+                  {isAdmin && (
                     <Link
-                      to="/profile"
-                      className="view-profile-link"
+                      to="/admin"
+                      className="dropdown-item"
                       onClick={() => setShowUserMenu(false)}
                     >
-                      View your channel
+                      <Zap size={16} /> <span>Admin Panel</span>
                     </Link>
-                  </div>
+                  )}
+                  {user.email && (
+                    <button
+                      className="dropdown-item logout-btn"
+                      onClick={handleLogout}
+                    >
+                      <LogOut size={16} /> <span>Sign Out</span>
+                    </button>
+                  )}
                 </div>
-                <div className="dropdown-divider"></div>
-                {isAdmin && (
-                  <Link
-                    to="/admin"
-                    className="dropdown-item"
-                    onClick={() => setShowUserMenu(false)}
-                  >
-                    <Zap size={16} /> <span>Admin Panel</span>
-                  </Link>
-                )}
-                {user.email && (
-                  <button
-                    className="dropdown-item logout-btn"
-                    onClick={handleLogout}
-                  >
-                    <LogOut size={16} /> <span>Sign Out</span>
-                  </button>
-                )}
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
 
-        <button
-          className="mobile-menu-btn"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+          {/* Mobile menu button on right */}
+          <button
+            className="mobile-menu-btn"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
       {mobileMenuOpen && (
