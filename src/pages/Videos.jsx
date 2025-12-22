@@ -8,6 +8,7 @@ import "./Videos.css";
 
 const Videos = () => {
   const [activeCategory, setActiveCategory] = useState("all");
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [videos, setVideos] = useState([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showManualAddModal, setShowManualAddModal] = useState(false);
@@ -34,6 +35,7 @@ const Videos = () => {
   const [likedLoading, setLikedLoading] = useState(false);
   const [trendingVideos, setTrendingVideos] = useState([]);
   const [trendingLoading, setTrendingLoading] = useState(false);
+  
 
   const [currentUserInfo, setCurrentUserInfo] = useState({
     fullName: "You",
@@ -680,11 +682,12 @@ const Videos = () => {
 
   return (
     <div className="videos-page">
-      <VideoSidebar
+         <VideoSidebar
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
+        mobileOpen={mobileOpen}
+        setMobileOpen={setMobileOpen}
       />
-
       <main className="videos-content">
         <div className="videos-header">
           <div>
