@@ -285,18 +285,18 @@
 
 .user-dropdown {
     position: absolute;
-    top: calc(100% + 1rem);
-    right: 0;
-    left: 20;
+    top: calc(100% + 8px); /* adjust spacing below profile icon */
+    right: 0;               /* align to right edge of parent */
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    min-width: 100px;
-    z-index: 1000;
+    min-width: 200px;       /* adjust width as needed */
+    z-index: 10000;         /* above everything */
     animation: fade-in 0.2s ease-out;
     overflow: hidden;
 }
+
 
 .user-info {
     padding: 1rem;
@@ -569,6 +569,7 @@
   align-items: center;
   padding: 4px 10px;
   gap: 12px;
+   z-index: 9999;
 }
 
 .user-info-avatar {
