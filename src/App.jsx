@@ -18,6 +18,7 @@ import { supabase } from "./lib/supabase";
 import UserProfile from "./pages/UserProfile";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Library from "./pages/Library";
+import ResetPassword from "./pages/ResetPassword";
 const queryClient = new QueryClient();
 
 // Sabse safe Protected Route
@@ -83,6 +84,9 @@ const App = () => {
           <Route path="/subscription" element={<Subscription />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/library" element={<Library />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/user/:id" element={<UserProfile />} />
+
           {/* Admin Route */}
           <Route
             path="/admin"

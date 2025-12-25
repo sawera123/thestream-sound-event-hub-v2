@@ -8,6 +8,7 @@ import "./Videos.css";
 
 const Videos = () => {
   const [activeCategory, setActiveCategory] = useState("all");
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [videos, setVideos] = useState([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showManualAddModal, setShowManualAddModal] = useState(false);
@@ -40,6 +41,26 @@ const Videos = () => {
     avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=You",
     userId: null,
   });
+
+  const [channelProfile, setChannelProfile] = useState(null);
+
+  useEffect(() => {
+    if (activeCategory.startsWith("channel_")) {
+      const channelId = activeCategory.split("_")[1];
+      const fetchChannelProfile = async () => {
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", channelId)
+          .maybeSingle();
+        if (!error) setChannelProfile(profile);
+      };
+      fetchChannelProfile();
+    } else {
+      setChannelProfile(null);
+    }
+  }, [activeCategory]);
+
   // Fetch current user
   useEffect(() => {
     const fetchUser = async () => {
@@ -67,14 +88,59 @@ const Videos = () => {
     fetchUser();
   }, []);
 
+  const getVideoDuration = (file) => {
+    if (!file) return Promise.resolve(0); // Safe check
+    return new Promise((resolve) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.src = URL.createObjectURL(file);
+
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(video.src);
+        resolve(video.duration);
+      };
+
+      // Error handling bhi add kar dein
+      video.onerror = () => {
+        resolve(0);
+      };
+    });
+  };
   // Fetch videos
   const fetchVideos = async () => {
     const { data, error } = await supabase
       .from("videos")
-      .select(`*, profiles(full_name, avatar_url)`)
-      .eq("approved", true)
+      .select(
+        `
+        *,
+        profiles (full_name),
+        views:video_views (count)
+      `,
+      )
+      // 💡 Logic Update: Normal videos approved honi chahiye,
+      // lekin LIVE hamesha nazar aani chahiye
+      .or("approved.eq.true,category.eq.Live")
       .order("created_at", { ascending: false });
-    if (!error && data) setVideos(data);
+
+    if (!error && data) {
+      const formatted = data.map((v) => {
+        // Supabase count mapping fix
+        let count = 0;
+        if (Array.isArray(v.views) && v.views.length > 0) {
+          count = v.views[0].count; // Agar array format mein hai
+        } else if (v.views && typeof v.views === "object") {
+          count = v.views.count || 0; // Agar direct object format mein hai
+        }
+
+        return {
+          ...v,
+          channelName: v.profiles?.full_name || "Unknown Channel",
+          viewsCount: count, // ✅ Ab ye 100% value pakray ga
+          duration: v.duration,
+        };
+      });
+      setVideos(formatted);
+    }
   };
 
   useEffect(() => {
@@ -198,10 +264,23 @@ const Videos = () => {
   const fetchTrendingVideos = async () => {
     setTrendingLoading(true);
 
-    const { data, error } = await supabase.rpc("get_trending_videos");
+    // 1. Trending IDs fetch karein (RPC call)
+    const { data: trendingRaw, error } = await supabase.rpc(
+      "get_trending_videos",
+    );
 
-    if (!error && data) {
-      setTrendingVideos(data);
+    if (!error && trendingRaw) {
+      // 2. Hamari main 'videos' state mein saara data pehle se hi formatted hai (channelName, viewsCount etc.)
+      // Hum trending IDs ko use karke apni main list se full objects nikaal lenge
+      const fullTrendingData = trendingRaw.map((tVideo) => {
+        // Main videos list mein se ye video dhoondein
+        const matchedVideo = videos.find((v) => v.id === tVideo.id);
+
+        // Agar main list mein mil jaye toh full data use karein, warna original return karein
+        return matchedVideo ? matchedVideo : tVideo;
+      });
+
+      setTrendingVideos(fullTrendingData);
     } else if (error) {
       console.error("Trending fetch error:", error);
     }
@@ -510,11 +589,29 @@ const Videos = () => {
       }
 
       if (category !== "Live" && !videoFile) {
+        const durationInSeconds = await getVideoDuration(videoFile);
         setUploadError("Please select a video file for upload.");
         setUploading(false);
         return;
       }
 
+      const handleFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const videoElement = document.createElement("video");
+          videoElement.preload = "metadata";
+
+          videoElement.onloadedmetadata = () => {
+            window.URL.revokeObjectURL(videoElement.src);
+            const duration = Math.round(videoElement.duration); // Seconds mein duration milegi
+            console.log("Video Duration:", duration);
+            // Is duration ko state mein save kar lein taake upload ke waqt bhej sakein
+            setVideoDuration(duration);
+          };
+
+          videoElement.src = URL.createObjectURL(file);
+        }
+      };
       // 3. Define Shared Variables
       const ipRes = await fetch("https://api.ipify.org?format=json");
       const ipData = await ipRes.json();
@@ -525,24 +622,31 @@ const Videos = () => {
       // =======================================================
       // A) LIVE STREAM START LOGIC
       // =======================================================
+      // --- handleUpload ke andar Live wala hissa ---
       if (category === "Live") {
         if (!streamKey || !playbackId)
           throw new Error("LivePeer assets not created. Try again.");
 
+        const autoLiveThumbnail = `https://livepeercdn.studio/hls/${playbackId}/thumbnails/default.jpg`;
+
+        // ✅ FIX: Duration ko "00:00" ya null rakhein kyunki live ki duration fixed nahi hoti
+        const formattedDuration = "LIVE";
+
         const { data, error } = await supabase
           .from("videos")
           .insert({
-            title,
+            title: title || "Untitled Live Stream",
             description,
             category: "Live",
             video_url: playbackId,
             stream_id: activeStreamId,
-            thumbnail_url: "videos_thumbnail/live_placeholder.png", // Live ke liye placeholder
+            thumbnail_url: thumbnailFile ? null : autoLiveThumbnail,
             uploaded_by: user.id,
             uploader_ip: userIp,
-            status: "approved", // Direct approve karne ke liye
-            approved: true, // Taake fetchVideos() mein fauran nazar aaye
-            stream_status: "active",
+            status: "approved",
+            approved: true, // Yeh true hona lazmi hai filteredVideos ke liye
+            stream_status: "live", // Initial status 'live' rakhein
+            duration: "LIVE",
           })
           .select()
           .single();
@@ -550,12 +654,38 @@ const Videos = () => {
         if (error) throw error;
         insertedRecord = data;
 
-        alert(`Stream created! Now go to your Home page, it's already there!`);
+        if (category === "Live" && insertedRecord) {
+          // 1. Un logon ko dhoondein jinhon ne IS CREATOR ko subscribe kiya hai
+          const { data: subscribers } = await supabase
+            .from("channel_subscriptions")
+            .select("user_id") // Ye subscriber ki ID hai
+            .eq("channel_id", user.id); // Jahan channel aapka (creator ka) hai
 
-        // =======================================================
-        // B) NORMAL VIDEO UPLOAD LOGIC
-        // =======================================================
+          if (subscribers && subscribers.length > 0) {
+            const notificationData = subscribers.map((sub) => ({
+              user_id: sub.user_id, // <--- Ye Subscriber ki ID hai (Receiver)
+              actor_id: user.id, // <--- Ye Aapki ID hai (Creator/Doer)
+              video_id: insertedRecord.id,
+              message: "is live now!",
+              is_read: false,
+              created_at: new Date().toISOString(),
+            }));
+
+            // Multi-row insert
+            const { error: notifError } = await supabase
+              .from("notifications")
+              .insert(notificationData);
+
+            if (notifError) console.error("Notification Error:", notifError);
+            console.log(`${subscribers.length} Subscribers notified!`);
+          }
+        }
+        alert("Stream is Live with Auto-Thumbnail!");
       } else {
+        const durationInSeconds = await getVideoDuration(videoFile); // Yeh sirf yahan hona chahiye
+        const minutes = Math.floor(durationInSeconds / 60);
+        const seconds = Math.floor(durationInSeconds % 60);
+        const formattedDuration = `${minutes}:${seconds.toString().padStart(2, "0")}`;
         // --- LIMIT CHECK (Normal Uploads ke liye) ---
         const { data: limitData, error: limitError } = await supabase.rpc(
           "check_upload_limits",
@@ -631,6 +761,7 @@ const Videos = () => {
             uploader_ip: userIp,
             status: "pending",
             stream_status: "finished",
+            duration: Math.round(durationInSeconds),
           })
           .select()
           .single();
@@ -683,8 +814,9 @@ const Videos = () => {
       <VideoSidebar
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
+        mobileOpen={mobileOpen}
+        setMobileOpen={setMobileOpen}
       />
-
       <main className="videos-content">
         <div className="videos-header">
           <div>
@@ -734,20 +866,38 @@ const Videos = () => {
 
         <div className="videos-grid">
           {filteredVideos.map((video) => {
-            // 🔍 Check if it's a Live video
-            const finalVideoUrl =
-              video.category === "Live"
-                ? `https://livepeercdn.studio/hls/${video.video_url}/index.m3u8` // Live URL
-                : supabase.storage.from("video").getPublicUrl(video.video_url)
-                    .data.publicUrl; // Normal URL
+            const isLiveCategory = video.category === "Live";
+            const isCurrentlyLive =
+              video.stream_status === "live" ||
+              video.stream_status === "active";
+            const isFinished = video.stream_status === "finished";
 
-            const finalThumbnailUrl = video.thumbnail_url?.startsWith("http")
-              ? video.thumbnail_url
-              : video.thumbnail_url
-                ? supabase.storage
+            // Videos.jsx mapping section mein ensure karein:
+            let finalVideoUrl = "";
+            if (isLiveCategory) {
+              if (isCurrentlyLive) {
+                finalVideoUrl = `https://livepeercdn.studio/hls/${video.video_url}/index.m3u8`;
+              } else {
+                // REC/Finished link
+                finalVideoUrl = `https://livepeercdn.studio/asset/${video.video_url}/video`;
+              }
+            } else {
+              // Normal video logic
+              finalVideoUrl = video.video_url;
+            }
+
+            // ✅ Dynamic Thumbnail Fix
+            let finalThumbnailUrl = "/live_placeholder.png";
+            if (isLiveCategory) {
+              // LivePeer standard live thumbnail path
+              finalThumbnailUrl = `https://livepeercdn.studio/hls/${video.video_url}/thumbnails/default.jpg`;
+            } else if (video.thumbnail_url) {
+              finalThumbnailUrl = video.thumbnail_url.startsWith("http")
+                ? video.thumbnail_url
+                : supabase.storage
                     .from("thumbnails")
-                    .getPublicUrl(video.thumbnail_url).data.publicUrl
-                : "/default-thumbnail.jpg";
+                    .getPublicUrl(video.thumbnail_url).data.publicUrl;
+            }
 
             return (
               <VideoCard
@@ -756,7 +906,13 @@ const Videos = () => {
                   ...video,
                   videoUrl: finalVideoUrl,
                   thumbnailUrl: finalThumbnailUrl,
+                  duration: isLiveCategory
+                    ? isCurrentlyLive
+                      ? "LIVE"
+                      : "REC"
+                    : video.duration || "00:00",
                 }}
+                onChannelClick={() => navigate(`/user/${video.uploaded_by}`)}
               />
             );
           })}

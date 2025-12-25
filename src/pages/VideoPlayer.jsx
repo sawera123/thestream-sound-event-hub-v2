@@ -406,9 +406,10 @@ const VideoPlayer = () => {
       if (error) throw error;
 
       const rawString = JSON.stringify(sessions);
+      // fetchRecording ke andar regex update karein:
       const match =
         rawString.match(
-          /"(https:\/\/[^"]+lp-playback\.studio[^"]+\.mp4[^"]*)"/i,
+          /"(https:\/\/[^"]+lp-playback\.studio[^"]+\.m3u8[^"]*)"/i,
         ) ||
         rawString.match(
           /"(https:\/\/[^"]+vod-cdn\.lp-playback\.studio[^"]+)"/i,
@@ -450,44 +451,56 @@ const VideoPlayer = () => {
   useEffect(() => {
     if (!video || !videoRef.current) return;
 
+    const videoEl = videoRef.current;
     if (hlsInstance.current) {
       hlsInstance.current.destroy();
-      hlsInstance.current = null;
     }
 
+    // --- YE FUNCTION DEFINE KIYA HAI ---
     const setupPlayer = async () => {
       let videoSrc = "";
-      let isLive = video.category === "Live";
+      const isLive =
+        video.stream_status === "live" || video.stream_status === "active";
+      const isFinished = video.stream_status === "finished";
 
       if (isLive) {
         videoSrc = `https://livepeercdn.studio/hls/${video.video_url}/index.m3u8`;
+      } else if (isFinished) {
+        videoSrc = `https://livepeercdn.studio/asset/${video.video_url}/video`;
       } else {
-        videoSrc = video.videoUrl; // Archived video
+        videoSrc = video.videoUrl;
       }
 
-      if (Hls.isSupported() && isLive) {
-        const hls = new Hls({ manifestLoadingMaxRetry: 10 });
+      console.log("Final Attempting URL:", videoSrc);
+
+      if (Hls.isSupported() && (isLive || isFinished)) {
+        const hls = new Hls({
+          manifestLoadingMaxRetry: 10,
+          xhrSetup: (xhr) => {
+            xhr.withCredentials = false;
+          },
+        });
+
         hlsInstance.current = hls;
         hls.loadSource(videoSrc);
         hls.attachMedia(videoRef.current);
 
         hls.on(Hls.Events.ERROR, (event, data) => {
           if (data.fatal && data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-            console.log("Stream offline detected.");
-            if (video.stream_id && !isSyncing) {
-              setTimeout(() => fetchRecording(video.stream_id), 5000);
+            const fallback = `https://livepeercdn.studio/hls/${video.video_url}/index.m3u8`;
+            if (hls.url !== fallback) {
+              console.warn("Trying fallback...");
+              hls.loadSource(fallback);
             }
           }
         });
       } else {
-        videoRef.current.src = videoSrc;
-        videoRef.current.controls = true;
+        // Fallback for native HLS (Safari) or normal videos
+        videoEl.src = videoSrc;
       }
-
-      videoRef.current.muted = true;
-      videoRef.current.play().catch(() => console.log("Autoplay blocked."));
     };
 
+    // ✅ SABSE IMPORTANT LINE: Isay call karna lazmi hai!
     setupPlayer();
 
     return () => {
@@ -514,6 +527,34 @@ const VideoPlayer = () => {
     fetchUser();
   }, []);
 
+  // Auto-sync: check for updated recording after live ends
+  useEffect(() => {
+    if (!video || video.category !== "Live") return;
+
+    const interval = setInterval(async () => {
+      try {
+        const { data: updatedVideo } = await supabase
+          .from("videos")
+          .select("*")
+          .eq("id", video.id)
+          .single();
+
+        if (updatedVideo.video_url !== video.videoUrl) {
+          setVideo((prev) => ({
+            ...prev,
+            videoUrl: updatedVideo.video_url,
+            stream_status: updatedVideo.stream_status,
+            duration: updatedVideo.duration,
+          }));
+        }
+      } catch (err) {
+        console.error("Auto-sync error:", err.message);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [video]);
+
   // Load Video
   useEffect(() => {
     if (!videoId) return;
@@ -525,11 +566,12 @@ const VideoPlayer = () => {
         .single();
       if (vid) {
         let vUrl = "";
-        if (vid.category !== "Live") {
+        if (vid.category === "Live") {
+          // Live ya Finished dono surat mein hum playbackId (video_url) use karenge
+          vUrl = vid.video_url;
+        } else {
           vUrl = supabase.storage.from("video").getPublicUrl(vid.video_url)
             .data.publicUrl;
-        } else {
-          vUrl = vid.video_url; // LivePeer playback_id stored here (e.g. c778qtp3g3ttcg9m)
         }
         let tUrl = "/default-thumbnail.jpg";
         if (vid.thumbnail_url) {
