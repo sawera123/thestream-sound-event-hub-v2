@@ -17,8 +17,9 @@ import NotFound from "./pages/NotFound";
 import { supabase } from "./lib/supabase";
 import UserProfile from "./pages/UserProfile";
 import PaymentSuccess from "./pages/PaymentSuccess";
-import Library from "./pages/Library";
 import ResetPassword from "./pages/ResetPassword";
+import SplashCursor from "./SplashCursor";
+import Library from './pages/Library';
 const queryClient = new QueryClient();
 
 // Sabse safe Protected Route
@@ -68,6 +69,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <HashRouter>
+         <SplashCursor />
         <Navigation />
         <Routes>
           <Route path="/login" element={<Login />} />

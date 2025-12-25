@@ -158,24 +158,18 @@ const Music = () => {
     }
   };
 
-  // 3. Handle Stripe Payment (Correct Logic)
+  // 3. Handle Stripe Payment
   const handleConfirmPurchase = async () => {
     if (!selectedTrack || !userId) return alert("Please login!");
     setUploading(true);
 
     try {
-      // Determines origin based on environment (fix for HashRouter)
-      // If you are using HashRouter (/#/), ensure this matches your URL structure
       const originUrl = window.location.port === "8080" 
-        ? 'http://localhost:8080/#' 
+        ? ' https://thestream-sound-event-hub-v2.vercel.app/' 
         : window.location.origin;
 
       const { data, error } = await supabase.functions.invoke('stripe-checkout', {
-        body: {
-          track: selectedTrack,
-          userId: userId,
-          origin: originUrl 
-        },
+        body: { track: selectedTrack, userId: userId, origin: originUrl },
       });
 
       if (error) throw error;

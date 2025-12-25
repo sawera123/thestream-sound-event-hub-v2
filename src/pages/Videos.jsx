@@ -35,6 +35,7 @@ const Videos = () => {
   const [likedLoading, setLikedLoading] = useState(false);
   const [trendingVideos, setTrendingVideos] = useState([]);
   const [trendingLoading, setTrendingLoading] = useState(false);
+  
 
   const [currentUserInfo, setCurrentUserInfo] = useState({
     fullName: "You",
@@ -811,7 +812,7 @@ const Videos = () => {
 
   return (
     <div className="videos-page">
-      <VideoSidebar
+         <VideoSidebar
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
         mobileOpen={mobileOpen}
