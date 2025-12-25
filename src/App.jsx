@@ -16,7 +16,8 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 import { supabase } from "./lib/supabase";
 import UserProfile from "./pages/UserProfile";
-import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentSuccess from "./pages/PaymentSuccess";
+import ResetPassword from "./pages/ResetPassword";
 import SplashCursor from "./SplashCursor";
 import Library from './pages/Library';
 const queryClient = new QueryClient();
@@ -85,6 +86,9 @@ const App = () => {
           <Route path="/subscription" element={<Subscription />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/library" element={<Library />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/user/:id" element={<UserProfile />} />
+
           {/* Admin Route */}
           <Route
             path="/admin"
