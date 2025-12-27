@@ -19,6 +19,8 @@ import UserProfile from "./pages/UserProfile";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Library from "./pages/Library";
 import ResetPassword from "./pages/ResetPassword";
+import Ticket from "./pages/Ticket";
+import { useNavigate } from "react-router-dom";
 const queryClient = new QueryClient();
 
 // Sabse safe Protected Route
@@ -86,6 +88,7 @@ const App = () => {
           <Route path="/library" element={<Library />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/user/:id" element={<UserProfile />} />
+          <Route path="/ticket/:id" element={<Ticket />} />
 
           {/* Admin Route */}
           <Route
